@@ -1,3 +1,8 @@
+# The source code are retrieved from
+# http://adventuresinmachinelearning.com/python-tensorflow-tutorial/
+# Using MNIST dataset as training and cross validation
+
+
 import tensorflow as tf
 import numpy as np
 from tensorflow.examples.tutorials.mnist import input_data
