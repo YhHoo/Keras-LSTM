@@ -1,11 +1,12 @@
 # The source code are retrieved from
 # http://adventuresinmachinelearning.com/python-tensorflow-tutorial/
-# Using MNIST dataset as training and cross validation
+# Using MNIST dataset as training and cross validation in tensorflow
 
 
 import tensorflow as tf
 import numpy as np
 from tensorflow.examples.tutorials.mnist import input_data
+
 
 # import MINST dataset
 mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
