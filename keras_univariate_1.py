@@ -1,6 +1,6 @@
 # The source code are retrieved from
 # https://machinelearningmastery.com/time-series-forecasting-long-short-term-memory-network-python/
-# Develop an LSTM forecast model for a one-step univariate time series forecasting problem.
+# Develop an LSTM forecast model for a one-step univariate time series forecasting problem using Keras.
 
 import numpy
 import time
@@ -10,7 +10,7 @@ from pandas import DataFrame
 from pandas import concat
 from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import MinMaxScaler
-from keras.models import Sequential
+from keras.models import Sequential, load_model
 from keras.layers import Dense
 from keras.layers import LSTM
 from math import sqrt
@@ -109,13 +109,6 @@ def yh_data_visualize():
     # print('Test Data Scaled:\n', test_data_scaled, '\n')
 
 
-# timer
-def timer(status=False):
-    start_time = time.clock()
-    if status is True:
-        print('\nTime taken: {}\n'.format(time.clock() - start_time))
-
-
 # read from csv
 series = read_csv('shampoo-sales.csv',
                   header=0,
@@ -141,7 +134,7 @@ scaler, train_data_scaled, test_data_scaled = scale(train_data, test_data)
 
 
 # repeat experiment
-repeats = 30
+repeats = 1
 error_scores = []
 for r in range(repeats):
     # timer
@@ -149,7 +142,7 @@ for r in range(repeats):
 
     # -----[Training of Model]---- with TRAIN data set
     # train the model for epochs-times(changeable), returned a trained model
-    lstm_model = fit_lstm(train_data_scaled, 1, 100, 4)
+    lstm_model = fit_lstm(train_data_scaled, 1, 500, 4)
     # forecast the entire training data set to build up state for forecasting
     train_data_reshaped = train_data_scaled[:, 0].reshape(len(train_data_scaled), 1, 1)  # useless**
     lstm_model.predict(train_data_reshaped, batch_size=1)
