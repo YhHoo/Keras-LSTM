@@ -3,6 +3,7 @@
 # Develop an LSTM forecast model for a one-step univariate time series forecasting problem.
 
 import numpy
+import time
 from pandas import read_csv
 from pandas import datetime
 from pandas import DataFrame
@@ -14,7 +15,6 @@ from keras.layers import Dense
 from keras.layers import LSTM
 from math import sqrt
 from matplotlib import pyplot
-
 
 
 def parser(x):
@@ -75,14 +75,21 @@ def invert_scale(scaler, X, value):
 # fit an LSTM network to training data
 def fit_lstm(train, batch_size, nb_epoch, neurons):
     X, y = train[:, 0:-1], train[:, -1]
+    # reshape into [samples, time steps, features] where LSTM layer expects input to be
     X = X.reshape(X.shape[0], 1, X.shape[1])
     model = Sequential()
+    # neurons being the no. of memory blocks.
+    # putting a LSTM layer into a keras model and compile
     model.add(LSTM(neurons, batch_input_shape=(batch_size, X.shape[1], X.shape[2]), stateful=True))
     model.add(Dense(1))
     model.compile(loss='mean_squared_error', optimizer='adam')
-    # start training by iterate on data sets for a no. specified by epoch
+    # start training the model with train data by iterating for a no. specified by epoch
     for i in range(nb_epoch):
-        model.fit(X, y, epochs=1, batch_size=batch_size, verbose=1, shuffle=False)
+        # epochs is the no. of iteration the model is trained over d entire data provided
+        # YH: i tink this for loop is to provide control for us to reset the state everytime an epoch
+        # is completed. If we do not wish to reset everytime, we can control iteration no by
+        # epochs inside fit()
+        model.fit(X, y, epochs=1, batch_size=batch_size, verbose=0, shuffle=False)
         model.reset_states()
     return model
 
@@ -95,13 +102,18 @@ def forecast_lstm(model, batch_size, X):
 
 
 # just to print out step by step to watch the changes
-def yh_data_visualize(flag=0):
-    if flag is 1:
-        print('Data Overview\n', series.head(), '\n')
-        print('Supervised_values(with shape: {}):\n'.format(supervised_values.shape), supervised_values, '\n')
-        print('Scaler:\n', scaler, '\n')
-        print('Training Data Scaled:\n', train_data_scaled, '\n')
-        print('Test Data Scaled:\n', test_data_scaled, '\n')
+def yh_data_visualize():
+    print('Data Overview\n', series.head(), '\n')
+    print('Supervised_values(with shape: {}):\n'.format(supervised_values.shape), supervised_values, '\n')
+    print('Training Data Scaled(with shape: {}):\n'.format(train_data_scaled.shape), train_data_scaled, '\n')
+    # print('Test Data Scaled:\n', test_data_scaled, '\n')
+
+
+# timer
+def timer(status=False):
+    start_time = time.clock()
+    if status is True:
+        print('\nTime taken: {}\n'.format(time.clock() - start_time))
 
 
 # read from csv
@@ -127,31 +139,40 @@ train_data, test_data = supervised_values[0:-12], supervised_values[-12:]
 # scale the data
 scaler, train_data_scaled, test_data_scaled = scale(train_data, test_data)
 
+
 # repeat experiment
 repeats = 30
 error_scores = []
 for r in range(repeats):
-    # fit the model
-    lstm_model = fit_lstm(train_data_scaled, 1, 3000, 4)
-    # forecast the entire training data set to build up state for forecasting
-    train_data_reshaped = train_data_scaled[:, 0].reshape(len(train_data_scaled), 1, 1)
-    lstm_model.predict(train_data_reshaped, batch_size=1)
+    # timer
+    start = time.clock()
 
-    # walk forward validation on test data set !!
+    # -----[Training of Model]---- with TRAIN data set
+    # train the model for epochs-times(changeable), returned a trained model
+    lstm_model = fit_lstm(train_data_scaled, 1, 100, 4)
+    # forecast the entire training data set to build up state for forecasting
+    train_data_reshaped = train_data_scaled[:, 0].reshape(len(train_data_scaled), 1, 1)  # useless**
+    lstm_model.predict(train_data_reshaped, batch_size=1)
+    print('Trial: {}/{}'.format(r, repeats))
+
+    # -----[Walk Forward Validation]---- with TEST data set
     predictions = []
     for i in range(len(test_data_scaled)):
-        # make one step forecast
+        # Input test data into the trained model and store the model prediction in np array yHat
+        # But here did it one by one, month by month instead of one shot
         X, y = test_data_scaled[i, 0:-1], test_data_scaled[i, -1]
         yhat = forecast_lstm(lstm_model, 1, X)
         # invert scaling
         yhat = invert_scale(scaler, X, yhat)
         # invert differencing
         yhat = inverse_difference(raw_values, yhat, len(test_data_scaled) + 1 - i)
-        # store forecast
+        # store model prediction in a list
         predictions.append(yhat)
-    # report performance
+
+    # Report Performance - test the model prediction of outputs of train data with it's expected output
     rmse = sqrt(mean_squared_error(raw_values[-12:], predictions))
     print('%d) Test RMSE: %.3f' % (r + 1, rmse))
+    print('Time Taken: {:.3f}'.format(time.clock() - start), 's\n')
     error_scores.append(rmse)
 
 
