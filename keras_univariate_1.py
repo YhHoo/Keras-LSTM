@@ -91,6 +91,7 @@ def fit_lstm(train, batch_size, nb_epoch, neurons):
         # epochs inside fit()
         model.fit(X, y, epochs=1, batch_size=batch_size, verbose=0, shuffle=False)
         model.reset_states()
+        print('Epoch {}/{}'.format(i, nb_epoch))
     return model
 
 
@@ -109,14 +110,19 @@ def yh_data_visualize():
     # print('Test Data Scaled:\n', test_data_scaled, '\n')
 
 
+def read_fr_csv(filename):
+    return read_csv(filename,
+                    header=0,
+                    parse_dates=[0],  # this tells the pandas to parse the column 0 as date
+                    index_col=0,
+                    squeeze=True,
+                    date_parser=parser)  # then this fn converts the column of string to
+                                         # an array of datetime instances
+
+
 # read from csv
-series = read_csv('shampoo-sales.csv',
-                  header=0,
-                  parse_dates=[0],  # this tells the pandas to parse the column 0 as date
-                  index_col=0,
-                  squeeze=True,
-                  date_parser=parser)  # then this fn converts the column of string to
-                                       # an array of datetime instances
+series = read_fr_csv('shampoo-sales.csv')
+
 # transform time series to stationary
 raw_values = series.values  # put only value in a list
 diff_values = difference(raw_values, interval=1)
@@ -133,48 +139,51 @@ train_data, test_data = supervised_values[0:-12], supervised_values[-12:]
 scaler, train_data_scaled, test_data_scaled = scale(train_data, test_data)
 
 
-# repeat experiment
-repeats = 1
-error_scores = []
-for r in range(repeats):
-    # timer
-    start = time.clock()
+# this is to prevent the code fr here onwards is executed when
+# this file is imported as a module
+if __name__ == '__main__':
+    # repeat experiment
+    repeats = 1
+    error_scores = []
+    for r in range(repeats):
+        # timer
+        start = time.clock()
 
-    # -----[Training of Model]---- with TRAIN data set
-    # train the model for epochs-times(changeable), returned a trained model
-    lstm_model = fit_lstm(train_data_scaled, 1, 500, 4)
-    # forecast the entire training data set to build up state for forecasting
-    train_data_reshaped = train_data_scaled[:, 0].reshape(len(train_data_scaled), 1, 1)  # useless**
-    lstm_model.predict(train_data_reshaped, batch_size=1)
-    print('Trial: {}/{}'.format(r, repeats))
+        # -----[Training of Model]---- with TRAIN data set
+        # train the model for epochs-times(changeable), returned a trained model
+        lstm_model = fit_lstm(train_data_scaled, 1, 500, 4)
+        # forecast the entire training data set to build up state for forecasting
+        train_data_reshaped = train_data_scaled[:, 0].reshape(len(train_data_scaled), 1, 1)  # useless**
+        lstm_model.predict(train_data_reshaped, batch_size=1)
+        print('Trial: {}/{}'.format(r, repeats))
 
-    # -----[Walk Forward Validation]---- with TEST data set
-    predictions = []
-    for i in range(len(test_data_scaled)):
-        # Input test data into the trained model and store the model prediction in np array yHat
-        # But here did it one by one, month by month instead of one shot
-        X, y = test_data_scaled[i, 0:-1], test_data_scaled[i, -1]
-        yhat = forecast_lstm(lstm_model, 1, X)
-        # invert scaling
-        yhat = invert_scale(scaler, X, yhat)
-        # invert differencing
-        yhat = inverse_difference(raw_values, yhat, len(test_data_scaled) + 1 - i)
-        # store model prediction in a list
-        predictions.append(yhat)
+        # -----[Walk Forward Validation]---- with TEST data set
+        predictions = []
+        for i in range(len(test_data_scaled)):
+            # Input test data into the trained model and store the model prediction in np array yHat
+            # But here did it one by one, month by month instead of one shot
+            X, y = test_data_scaled[i, 0:-1], test_data_scaled[i, -1]
+            yhat = forecast_lstm(lstm_model, 1, X)
+            # invert scaling
+            yhat = invert_scale(scaler, X, yhat)
+            # invert differencing
+            yhat = inverse_difference(raw_values, yhat, len(test_data_scaled) + 1 - i)
+            # store model prediction in a list
+            predictions.append(yhat)
 
-    # Report Performance - test the model prediction of outputs of train data with it's expected output
-    rmse = sqrt(mean_squared_error(raw_values[-12:], predictions))
-    print('%d) Test RMSE: %.3f' % (r + 1, rmse))
-    print('Time Taken: {:.3f}'.format(time.clock() - start), 's\n')
-    error_scores.append(rmse)
+        # Report Performance - test the model prediction of outputs of train data with it's expected output
+        rmse = sqrt(mean_squared_error(raw_values[-12:], predictions))
+        print('%d) Test RMSE: %.3f' % (r + 1, rmse))
+        print('Time Taken: {:.3f}'.format(time.clock() - start), 's\n')
+        error_scores.append(rmse)
+        lstm_model.save('shampoo_model_1.h5')
 
-
-# summarize results
-results = DataFrame()
-results['rmse'] = error_scores
-print(results.describe())
-results.boxplot()
-pyplot.show()
+    # summarize results
+    results = DataFrame()
+    results['rmse'] = error_scores
+    print(results.describe())
+    results.boxplot()
+    pyplot.show()
 
 
 
