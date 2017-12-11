@@ -151,7 +151,7 @@ if __name__ == '__main__':
 
         # -----[Training of Model]---- with TRAIN data set
         # train the model for epochs-times(changeable), returned a trained model
-        lstm_model = fit_lstm(train_data_scaled, 1, 500, 4)
+        lstm_model = fit_lstm(train_data_scaled, 1, 3000, 4)
         # forecast the entire training data set to build up state for forecasting
         train_data_reshaped = train_data_scaled[:, 0].reshape(len(train_data_scaled), 1, 1)  # useless**
         lstm_model.predict(train_data_reshaped, batch_size=1)
