@@ -10,7 +10,7 @@ from pandas import DataFrame
 from pandas import concat
 from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import MinMaxScaler
-from keras.models import Sequential, load_model
+from keras.models import Sequential, model_from_json
 from keras.layers import Dense
 from keras.layers import LSTM
 from math import sqrt
@@ -184,6 +184,22 @@ if __name__ == '__main__':
         print('%d) Test RMSE: %.3f' % (r + 1, rmse))
         print('Time Taken: {:.3f}'.format(time.clock() - start), 's\n')
         error_scores.append(rmse)
+
+        # ----[Saving Model]----
+        # serialize and saving the model structure to JSON
+        model_json = lstm_model.to_json()
+        with open('shampoo_model.json', 'w') as json_file:
+            json_file.write(model_json)
+        # serialize and save the model weights to HDF5
+        lstm_model.save_weights('shampoo_model.h5')
+        print('Model saved !')
+
+
+
+
+
+
+
         lstm_model.save('shampoo_model_1.h5')
 
     # summarize results in box plot
