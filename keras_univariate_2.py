@@ -4,6 +4,7 @@ from sklearn.metrics import mean_squared_error
 from keras.models import load_model
 from math import sqrt
 import keras_univariate_1 as ku1
+from matplotlib import pyplot
 
 
 lstm_model = load_model('shampoo_model_1.h5')
@@ -38,8 +39,9 @@ for i in range(len(test_data_scaled)):
     # store model prediction in a list
     predictions.append(yhat)
 
-
+pyplot.plot(predictions, 'r', raw_values[-12:], 'b')
 # Report Performance - test the model prediction of outputs of train data with it's expected output
 rmse = sqrt(mean_squared_error(raw_values[-12:], predictions))
 print('%d) Test RMSE: %.3f' % (1, rmse))
 error_scores.append(rmse)
+pyplot.show()

@@ -80,13 +80,17 @@ def fit_lstm(train, batch_size, nb_epoch, neurons):
     model = Sequential()
     # neurons being the no. of memory blocks.
     # putting a LSTM layer into a keras model and compile
+    # batch size defines the number of data are feed into the network during each epoch
+    # batch_input_shape is a tuple that defines expected no of observation to read each batch,
+    # the no of time step and no of features.
+    # then compile the network into efficient symbolic rep using tensorflow as backend math lib.
     model.add(LSTM(neurons, batch_input_shape=(batch_size, X.shape[1], X.shape[2]), stateful=True))
     model.add(Dense(1))
     model.compile(loss='mean_squared_error', optimizer='adam')
     # start training the model with train data by iterating for a no. specified by epoch
     for i in range(nb_epoch):
         # epochs is the no. of iteration the model is trained over d entire data provided
-        # YH: i tink this for loop is to provide control for us to reset the state everytime an epoch
+        # YH: i tink this 'for loop' is to provide control for us to reset the state everytime an epoch
         # is completed. If we do not wish to reset everytime, we can control iteration no by
         # epochs inside fit()
         model.fit(X, y, epochs=1, batch_size=batch_size, verbose=0, shuffle=False)
@@ -108,6 +112,7 @@ def yh_data_visualize():
     print('Supervised_values(with shape: {}):\n'.format(supervised_values.shape), supervised_values, '\n')
     print('Training Data Scaled(with shape: {}):\n'.format(train_data_scaled.shape), train_data_scaled, '\n')
     # print('Test Data Scaled:\n', test_data_scaled, '\n')
+
 
 
 def read_fr_csv(filename):
@@ -142,7 +147,7 @@ scaler, train_data_scaled, test_data_scaled = scale(train_data, test_data)
 # this is to prevent the code fr here onwards is executed when
 # this file is imported as a module
 if __name__ == '__main__':
-    # repeat experiment
+    # repeat the same training to find the best
     repeats = 1
     error_scores = []
     for r in range(repeats):
@@ -151,11 +156,12 @@ if __name__ == '__main__':
 
         # -----[Training of Model]---- with TRAIN data set
         # train the model for epochs-times(changeable), returned a trained model
-        lstm_model = fit_lstm(train_data_scaled, 1, 3000, 4)
+        lstm_model = fit_lstm(train_data_scaled, 1, 500, 4)
         # forecast the entire training data set to build up state for forecasting
-        train_data_reshaped = train_data_scaled[:, 0].reshape(len(train_data_scaled), 1, 1)  # useless**
+        # change the input array fr 2d to 3d
+        train_data_reshaped = train_data_scaled[:, 0].reshape(len(train_data_scaled), 1, 1)
         lstm_model.predict(train_data_reshaped, batch_size=1)
-        print('Trial: {}/{}'.format(r, repeats))
+        print('Training {}/{} completed'.format(r+1, repeats))
 
         # -----[Walk Forward Validation]---- with TEST data set
         predictions = []
@@ -171,6 +177,8 @@ if __name__ == '__main__':
             # store model prediction in a list
             predictions.append(yhat)
 
+        # visualize the raw test data with the predicted data
+        pyplot.plot(predictions, 'r', raw_values[-12:], 'b')
         # Report Performance - test the model prediction of outputs of train data with it's expected output
         rmse = sqrt(mean_squared_error(raw_values[-12:], predictions))
         print('%d) Test RMSE: %.3f' % (r + 1, rmse))
@@ -178,11 +186,11 @@ if __name__ == '__main__':
         error_scores.append(rmse)
         lstm_model.save('shampoo_model_1.h5')
 
-    # summarize results
-    results = DataFrame()
-    results['rmse'] = error_scores
-    print(results.describe())
-    results.boxplot()
+    # summarize results in box plot
+    # results = DataFrame()
+    # results['rmse'] = error_scores
+    # print(results.describe())
+    # results.boxplot()
     pyplot.show()
 
 
