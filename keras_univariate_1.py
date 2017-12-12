@@ -114,7 +114,7 @@ def yh_data_visualize():
     # print('Test Data Scaled:\n', test_data_scaled, '\n')
 
 
-
+# read data from csv file
 def read_fr_csv(filename):
     return read_csv(filename,
                     header=0,
@@ -156,10 +156,10 @@ if __name__ == '__main__':
 
         # -----[Training of Model]---- with TRAIN data set
         # train the model for epochs-times(changeable), returned a trained model
-        lstm_model = fit_lstm(train_data_scaled, 1, 500, 4)
-        # forecast the entire training data set to build up state for forecasting
+        lstm_model = fit_lstm(train_data_scaled, 1, 1000, 4)
         # change the input array fr 2d to 3d
         train_data_reshaped = train_data_scaled[:, 0].reshape(len(train_data_scaled), 1, 1)
+        # forecast the entire training data set to build up state for forecasting
         lstm_model.predict(train_data_reshaped, batch_size=1)
         print('Training {}/{} completed'.format(r+1, repeats))
 
@@ -168,7 +168,7 @@ if __name__ == '__main__':
         for i in range(len(test_data_scaled)):
             # Input test data into the trained model and store the model prediction in np array yHat
             # But here did it one by one, month by month instead of one shot
-            X, y = test_data_scaled[i, 0:-1], test_data_scaled[i, -1]
+            X, y = test_data_scaled[i, 0:-1], test_data_scaled[i, -1]  # y is trivial
             yhat = forecast_lstm(lstm_model, 1, X)
             # invert scaling
             yhat = invert_scale(scaler, X, yhat)
@@ -195,13 +195,6 @@ if __name__ == '__main__':
         print('Model saved !')
 
 
-
-
-
-
-
-        lstm_model.save('shampoo_model_1.h5')
-
     # summarize results in box plot
     # results = DataFrame()
     # results['rmse'] = error_scores
@@ -210,8 +203,37 @@ if __name__ == '__main__':
     pyplot.show()
 
 
+print('----Testing the Saved Model----')
+json_file = open('shampoo_model.json', 'r')
+loaded_json_model = json_file.read()
+json_file.close()
+lstm_model = model_from_json(loaded_json_model)
+# load weights into new model
+lstm_model.load_weights('shampoo_model.h5')
+print('Model Loaded !')
+lstm_model.compile(loss='mean_squared_error', optimizer='adam')
 
 
+predictions = []
+for i in range(len(test_data_scaled)):
+    # Input test data into the trained model and store the model prediction in np array yHat
+    # But here did it one by one, month by month instead of one shot
+    X, y = test_data_scaled[i, 0:-1], test_data_scaled[i, -1]  # y is trivial
+    yhat = forecast_lstm(lstm_model, 1, X)
+    # invert scaling
+    yhat = invert_scale(scaler, X, yhat)
+    # invert differencing
+    yhat = inverse_difference(raw_values, yhat, len(test_data_scaled) + 1 - i)
+    # store model prediction in a list
+    predictions.append(yhat)
+
+# visualize the raw test data with the predicted data
+pyplot.plot(predictions, 'r', raw_values[-12:], 'b')
+# Report Performance - test the model prediction of outputs of train data with it's expected output
+rmse = sqrt(mean_squared_error(raw_values[-12:], predictions))
+print('%d) Test RMSE: %.3f' % (r + 1, rmse))
+print('Time Taken: {:.3f}'.format(time.clock() - start), 's\n')
+error_scores.append(rmse)
 
 
 
