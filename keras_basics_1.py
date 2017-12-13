@@ -41,7 +41,7 @@ class LstmNetwork:
 
     def predict(self):
         for unit_input in self.x:
-            x = np.reshape(unit_input, (1, len(unit_input), 1))
+            x = np.reshape(unit_input, (1, 1, len(unit_input)))
             x = x / float(len(self.alphabet))
             prediction = self.model.predict(x, verbose=0)
             index = np.argmax(prediction)
@@ -51,11 +51,11 @@ class LstmNetwork:
 
 
 # this creates a data set for One-Char to One-Char Mapping by Stateful LSTM
-def one_char_to_one_char_data():
+def one_char_to_one_char_data(sequence_length):
     # define sequence length, e.g. for =2: 'A','B' for 'C'; for =3: 'A','B','C' for 'D'
     # this sequence is to supervised training the network
     alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    seq_length = 1
+    seq_length = sequence_length  # Change this value to have a diff training outcomes***
     data_x, data_y = [], []
     # create a dict of mappings btw every single char in alphabet to index 0-*
     # e.g. {'A':0, 'B':1, ...}
@@ -70,7 +70,7 @@ def one_char_to_one_char_data():
         data_x.append([char_map_int[char] for char in seq_in])
         data_y.append([char_map_int[char] for char in seq_out])
     # reshape X to be [samples, time steps, features]
-    data_x_processed = np.reshape(data_x, (len(data_x), seq_length, 1))
+    data_x_processed = np.reshape(data_x, (len(data_x), 1, seq_length))
     # normalize
     data_x_processed = data_x_processed / float(len(alphabet))
     # one hot encode the output variable

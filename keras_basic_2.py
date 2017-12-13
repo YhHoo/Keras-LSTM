@@ -6,7 +6,7 @@ import numpy as np
 np.random.seed(7)
 
 # initialize training data set
-raw_data, data_x, data_y, data_x_processed, data_y_processed, char_to_int, int_to_char = kb1.one_char_to_one_char_data()
+raw_data, data_x, data_y, data_x_processed, data_y_processed, char_to_int, int_to_char = kb1.one_char_to_one_char_data(3)
 # instantiate the lstm network
 lstm_network = kb1.LstmNetwork(raw_data, data_x, data_y, data_x_processed, data_y_processed, char_to_int, int_to_char)
 # training
