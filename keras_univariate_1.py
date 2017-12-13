@@ -84,7 +84,9 @@ def fit_lstm(train, batch_size, nb_epoch, neurons):
     # batch_input_shape is a tuple that defines expected no of observation to read each batch,
     # the no of time step and no of features.
     # then compile the network into efficient symbolic rep using tensorflow as backend math lib.
-    model.add(LSTM(neurons, batch_input_shape=(batch_size, X.shape[1], X.shape[2]), stateful=True))
+    # stateful=0 to ensure saved and loaded model giv same prediction with trained model.
+    # neurons of LSTM means the dim of outer space
+    model.add(LSTM(neurons, batch_input_shape=(batch_size, X.shape[1], X.shape[2]), stateful=0))
     model.add(Dense(1))
     model.compile(loss='mean_squared_error', optimizer='adam')
     # start training the model with train data by iterating for a no. specified by epoch
@@ -201,42 +203,6 @@ if __name__ == '__main__':
     # print(results.describe())
     # results.boxplot()
     pyplot.show()
-
-
-print('----Testing the Saved Model----')
-json_file = open('shampoo_model.json', 'r')
-loaded_json_model = json_file.read()
-json_file.close()
-lstm_model = model_from_json(loaded_json_model)
-# load weights into new model
-lstm_model.load_weights('shampoo_model.h5')
-print('Model Loaded !')
-lstm_model.compile(loss='mean_squared_error', optimizer='adam')
-
-
-predictions = []
-for i in range(len(test_data_scaled)):
-    # Input test data into the trained model and store the model prediction in np array yHat
-    # But here did it one by one, month by month instead of one shot
-    X, y = test_data_scaled[i, 0:-1], test_data_scaled[i, -1]  # y is trivial
-    yhat = forecast_lstm(lstm_model, 1, X)
-    # invert scaling
-    yhat = invert_scale(scaler, X, yhat)
-    # invert differencing
-    yhat = inverse_difference(raw_values, yhat, len(test_data_scaled) + 1 - i)
-    # store model prediction in a list
-    predictions.append(yhat)
-
-# visualize the raw test data with the predicted data
-pyplot.plot(predictions, 'r', raw_values[-12:], 'b')
-# Report Performance - test the model prediction of outputs of train data with it's expected output
-rmse = sqrt(mean_squared_error(raw_values[-12:], predictions))
-print('%d) Test RMSE: %.3f' % (r + 1, rmse))
-print('Time Taken: {:.3f}'.format(time.clock() - start), 's\n')
-error_scores.append(rmse)
-
-
-
 
 
 # ---------------------[Persistence Model Forecast]------------------------------

@@ -1,4 +1,6 @@
 # this file load the model trained from keras_univariate_1.py
+# and feed in the same test set to inspect for correctness of
+# prediction by loaded model
 
 from sklearn.metrics import mean_squared_error
 from math import sqrt
