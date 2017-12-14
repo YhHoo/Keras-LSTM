@@ -1,6 +1,7 @@
 # The source code are retrieved from
 # https://machinelearningmastery.com/time-series-forecasting-long-short-term-memory-network-python/
 # Develop an LSTM forecast model for a one-step univariate time series forecasting problem using Keras.
+# On shampoo sales dataset for 3 years
 
 import numpy
 import time
