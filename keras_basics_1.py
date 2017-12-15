@@ -27,7 +27,7 @@ class LstmNetwork:
     # inputs and labels comes in pairs, as a supervised training set
     # nb_epochs is no of training it carries out with the same data set
     def training(self, nb_epochs, batch_size, shuffle):
-        self.model.add(LSTM(32, input_shape=(self.inputs.shape[1], self.inputs.shape[2])))
+        self.model.add(LSTM(32, input_shape=(self.inputs.shape[1], self.inputs.shape[2]), stateful=False))
         self.model.add(Dense(self.labels.shape[1], activation='softmax'))
         self.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
         print('Training Started...')
@@ -37,6 +37,26 @@ class LstmNetwork:
                        batch_size=batch_size,
                        verbose=2,
                        shuffle=shuffle)
+        print('Training Completed !')
+
+    # this training turn on the Stateful, and reset the state after each epoch. It is to show the effect
+    # of turning on Stateful for LSTM
+    def training_stateful(self, nb_epoch):
+        batch_size = 1  # here fix batch size = 1
+        # input_shape becomes 3D from 2D, with batch size as first dim,
+        self.model.add(LSTM(16, input_shape=(batch_size, self.inputs.shape[1], self.inputs.shape[2]), stateful=True))
+        self.model.add(Dense(self.labels.shape[1], activation='softmax'))
+        self.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+        # it now split the epoch into individual controlled iteration so we can reset state after every epoch
+        print('Stateful Training Started...')
+        for i in range(nb_epoch):
+            self.model.fit(self.inputs,
+                           self.labels,
+                           epochs=1,
+                           batch_size=batch_size,
+                           verbose=2,
+                           shuffle=False)
+            self.model.reset_states()
         print('Training Completed !')
 
     def test_accuracy(self):
@@ -86,7 +106,7 @@ def one_char_to_one_char_data(sequence_length):
         seq_in = alphabet[i: i + seq_length]
         seq_out = alphabet[i + seq_length]
         # save another copy of int rep of the alphabets
-        # [] is used to contain all seq in one single index of the array
+        # [] is used to contain all seq in one single index of the array data_x
         data_x.append([char_map_int[char] for char in seq_in])
         data_y.append([char_map_int[char] for char in seq_out])
     # reshape X to be [samples, time steps, features]
