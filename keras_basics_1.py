@@ -47,7 +47,7 @@ class LstmNetwork:
     def training_stateful(self, nb_epoch):
         batch_size = 1  # here fix batch size = 1
         # input_shape becomes 3D from 2D, with batch size as first dim,
-        self.model.add(LSTM(16, input_shape=(batch_size, self.inputs.shape[1], self.inputs.shape[2]), stateful=True))
+        self.model.add(LSTM(16, batch_input_shape=(batch_size, self.inputs.shape[1], self.inputs.shape[2]), stateful=True))
         self.model.add(Dense(self.labels.shape[1], activation='softmax'))
         self.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
         # it now split the epoch into individual controlled iteration so we can reset state after every epoch
@@ -62,15 +62,21 @@ class LstmNetwork:
             self.model.reset_states()
         print('Training Completed !')
 
-    def test_accuracy(self):
+    def test_accuracy(self, stateful=False):
         print('Testing Model Accuracy...')
-        scores = self.model.evaluate(self.inputs, self.labels, verbose=0)
+        if stateful is True:
+            scores = self.model.evaluate(self.inputs, self.labels, batch_size=1, verbose=0)
+        else:
+            scores = self.model.evaluate(self.inputs, self.labels, verbose=0)
         print('Model Accuracy: {:.2f}'.format(scores[1] * 100))
 
     def predict_all(self):
+        print('Testing all inputs: ')
         for unit_input in self.x:
+            # convert each set inside x to 3D and scale it
             x = np.reshape(unit_input, (1, self.inputs.shape[1], self.inputs.shape[2]))
             x = x / float(len(alphabet))
+            # feed each of them into the trained model
             prediction = self.model.predict(x, verbose=0)
             index = np.argmax(prediction)
             result = int_to_char[index]  # yh: index might not b int
@@ -78,11 +84,12 @@ class LstmNetwork:
             print(seq_in, '->', result)
 
     def predict_random(self):
-        print('Random testing: ')
+        print('Testing randomly: ')
         for i in range(20):
+            # randomize
             unit_input_index = np.random.randint(len(self.x))
             unit_input = self.x[unit_input_index]
-            # convert into [samples, time steps, features]
+            # convert into [samples, time steps, features] fr 2D
             x = np.reshape(unit_input, (1, self.inputs.shape[1], self.inputs.shape[2]))
             x = x / float(len(alphabet))
             prediction = self.model.predict(x, verbose=0)
@@ -90,6 +97,18 @@ class LstmNetwork:
             result = int_to_char[index]
             seq_in = [int_to_char[values] for values in unit_input]
             print(seq_in, '->', result)
+
+    def predict_random_starting(self, start):
+        print('Testing starts from \'{}\':'.format(start))
+        seed = [char_to_int[start]]  # contain in a list
+        for i in range(5):
+            x = np.reshape(seed, (1, self.inputs.shape[1], self.inputs.shape[2]))
+            x = x / float(len(alphabet))
+            prediction = self.model.predict(x, verbose=0)
+            index = np.argmax(prediction)
+            print(int_to_char[seed], '->', int_to_char[index])
+            seed = [index]
+        self.model.reset_states()
 
 
 # this creates a data set for n-Char to One-Char Mapping by LSTM

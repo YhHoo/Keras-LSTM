@@ -1,6 +1,18 @@
 import keras_basics_1 as kb1
 import numpy as np
 
+# ----[Configure the Network]----
+# Firstly, the sequence_length, predict_all() & predict_random() are free to vary under any case
+# [A] One-Char-to-One-Char Training(Feature Window)
+# --> Set window='feature'; batch_size=1; epoch=500
+# [B] One-Char-to-One-Char Training(Time_step Window)
+# --> Set window='time_step'; batch_size=1; epoch=500
+# [C] All-in-one-Batch Training
+# --> Set batch_size=len(data_x); shuffle=False; epoch=5000; window=any
+# [D] Stateful LSTM Training(this is to train network to be able to match any no. of sequence to 1 alphabet, instead
+# of only 1 or 3. It also means the state of one batch are being used on next batch)
+# -->
+
 
 # fix random seed for reproducibility
 np.random.seed(7)
@@ -11,15 +23,21 @@ data_x, data_y, data_x_processed, data_y_processed = \
 
 # instantiate the lstm network
 lstm_network = kb1.LstmNetwork(data_x, data_y, data_x_processed, data_y_processed)
+
+# ----[CHOOSE ONLY 1]----
 # training
-lstm_network.training(nb_epochs=500, batch_size=1, shuffle=True)
+# lstm_network.training(nb_epochs=5000, batch_size=len(data_x), shuffle=True)
+# training stateful
+lstm_network.training_stateful(nb_epoch=300)
+
 # test accuracy
-lstm_network.test_accuracy()
+lstm_network.test_accuracy(stateful=True)
 # prediction visualization
 lstm_network.predict_all()
 # prediction random
 lstm_network.predict_random()
-
+# 5 prediction at a randomly choosed starting alphabet
+lstm_network.predict_random_starting('K')
 
 # Data Visualization before Training, Uncomment to watch if u are confused
 print('raw data:\n', kb1.alphabet)
