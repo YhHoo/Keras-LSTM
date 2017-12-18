@@ -30,7 +30,9 @@ class LstmNetwork:
     # inputs and labels comes in pairs, as a supervised training set
     # nb_epochs is no of training it carries out with the same data set
     def training(self, nb_epochs, batch_size, shuffle):
-        self.model.add(LSTM(32, input_shape=(self.inputs.shape[1], self.inputs.shape[2]), stateful=False))
+        self.model.add(LSTM(32,
+                            input_shape=(self.inputs.shape[1], self.inputs.shape[2]),
+                            stateful=False))
         self.model.add(Dense(self.labels.shape[1], activation='softmax'))
         self.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
         print('Training Started...')
@@ -47,7 +49,9 @@ class LstmNetwork:
     def training_stateful(self, nb_epoch):
         batch_size = 1  # here fix batch size = 1
         # input_shape becomes 3D from 2D, with batch size as first dim,
-        self.model.add(LSTM(16, batch_input_shape=(batch_size, self.inputs.shape[1], self.inputs.shape[2]), stateful=True))
+        self.model.add(LSTM(16,
+                            batch_input_shape=(batch_size, self.inputs.shape[1], self.inputs.shape[2]),
+                            stateful=True))
         self.model.add(Dense(self.labels.shape[1], activation='softmax'))
         self.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
         # it now split the epoch into individual controlled iteration so we can reset state after every epoch
@@ -64,8 +68,9 @@ class LstmNetwork:
 
     def test_accuracy(self, stateful=False):
         print('Testing Model Accuracy...')
-        if stateful is True:
+        if stateful:
             scores = self.model.evaluate(self.inputs, self.labels, batch_size=1, verbose=0)
+            self.model.reset_states()
         else:
             scores = self.model.evaluate(self.inputs, self.labels, verbose=0)
         print('Model Accuracy: {:.2f}'.format(scores[1] * 100))
@@ -106,7 +111,7 @@ class LstmNetwork:
             x = x / float(len(alphabet))
             prediction = self.model.predict(x, verbose=0)
             index = np.argmax(prediction)
-            print(int_to_char[seed], '->', int_to_char[index])
+            print(int_to_char[seed[0]], '->', int_to_char[index])
             seed = [index]
         self.model.reset_states()
 
@@ -130,12 +135,12 @@ def n_char_to_one_char_data(sequence_length, window):
         # data_x = [[0], [1], ...], data_y = [[1], [2], ...] for seq_len=1
         # data_x = [[0, 1, 2], [2, 3, 4], ...], data_y = [[3], [4], ...] for seq_len=3
         data_x.append([char_to_int[char] for char in seq_in])
-        data_y.append([char_to_int[char] for char in seq_out])
+        data_y.append(char_to_int[seq_out])
     # reshape X to be [samples, time steps, features]
     if window == 'time_step':
         data_x_processed = np.reshape(data_x, (len(data_x), seq_length, 1))
     elif window == 'feature':
-        data_x_processed = np.reshape(data_x, (len(data_x), 1, seq_length))
+        data_x_processed = np.reshape(data_x, (len(data_x), 1, seq_length))  # ELSE NEEDED !
     # normalize
     data_x_processed = data_x_processed / float(len(alphabet))
     # one hot encode the output variable, meaning convert 3 to 00010...0, 4 to 000010...0, and so on
