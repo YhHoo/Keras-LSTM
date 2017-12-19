@@ -4,6 +4,7 @@ from keras.layers import Dense
 from keras.layers import LSTM
 from keras.utils import np_utils
 from keras.preprocessing.sequence import pad_sequences
+from keras.callbacks import ModelCheckpoint
 
 # global variables
 alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -56,13 +57,23 @@ class LstmNetwork:
         self.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
         # it now split the epoch into individual controlled iteration so we can reset state after every epoch
         print('Stateful Training Started...')
+        # checkpoint to save the model of best acc
+        filepath = 'alphabet_best_model.hdf5'
+        checkpoint = ModelCheckpoint(filepath=filepath,
+                                     monitor='acc',
+                                     verbose=1,
+                                     save_best_only=True,
+                                     mode='max',  # for acc, it should b 'max'; for loss, 'min'
+                                     period=5)  # no of epoch btw checkpoints
+        callback_list = [checkpoint]
         for i in range(nb_epoch):
             self.model.fit(self.inputs,
                            self.labels,
                            epochs=1,
                            batch_size=batch_size,
                            verbose=2,
-                           shuffle=False)
+                           shuffle=False,
+                           callbacks=callback_list)
             self.model.reset_states()
         print('Training Completed !')
 
@@ -110,17 +121,29 @@ class LstmNetwork:
             x = np.reshape(seed, (1, self.inputs.shape[1], self.inputs.shape[2]))
             x = x / float(len(alphabet))
             prediction = self.model.predict(x, verbose=0)
-            index = np.argmax(prediction)
+            index = np.argmax(prediction)  # take the max among the list
             print(int_to_char[seed[0]], '->', int_to_char[index])
             seed = [index]
         self.model.reset_states()
+
+    def predict_variable_length(self):
+        for i in range(20):
+            pattern_index = np.random.randint(len(self.x))
+            pattern = self.x[pattern_index]
+            x = pad_sequences([pattern], maxlen=self.inputs.shape[1], dtype='float32')
+            x = np.reshape(x, (1, self.inputs.shape[1], 1))
+            x = x / float(len(alphabet))
+            prediction = self.model.predict(x, verbose=0)
+            index = np.argmax(prediction)
+            result = int_to_char[index]
+            seq_in = [int_to_char[value] for value in pattern]
+            print(seq_in, "->", result)
 
 
 # this creates a data set for n-Char to One-Char Mapping by LSTM
 def n_char_to_one_char_data(sequence_length, window):
     # define sequence length, e.g. for =2: 'A','B' for 'C'; for =3: 'A','B','C' for 'D'
     # this sequence is to supervised training the network
-    alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
     seq_length = sequence_length  # Change this value to have a diff training outcomes***
     data_x, data_y = [], []
     # create a dict of mappings btw every single char in alphabet to index 0-*
@@ -151,32 +174,30 @@ def n_char_to_one_char_data(sequence_length, window):
     return data_x, data_y, data_x_processed, data_y_processed
 
 
-def state_within_a_batch_data(sequence_length):
-    alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    seq_length = sequence_length
+# generate a dataset of input output pairs
+def variable_char_to_one_char(max_len=5):
+    num_inputs = 1000
+    # prevent max_len too big
+    if max_len > 25:
+        raise ValueError('max_len greater than 25, please lower it!')
     data_x, data_y = [], []
-    # create a dict of mappings btw every single char in alphabet to index 0-*
-    # e.g. {'A':0, 'B':1, ...}
-    char_map_int = dict((c, i) for i, c in enumerate(alphabet))
-    int_map_char = dict((i, c) for i, c in enumerate(alphabet))
-    # mapping of 'A' to 0, ....
-    for i in range(0, len(alphabet) - seq_length, 1):
-        # extract section of the alphabet and store
-        seq_in = alphabet[i: i + seq_length]
-        seq_out = alphabet[i + seq_length]
-        # save another copy of int rep of the alphabets
-        # [] is used to contain all seq in one single index of the array
-        data_x.append([char_map_int[char] for char in seq_in])
-        data_y.append([char_map_int[char] for char in seq_out])
-
-    # convert list of lists to array and pad sequences if needed
-    x = pad_sequences(data_x, maxlen=seq_length, dtype='float32')
-    # reshape X to be [samples, time steps, features]
-    x = np.reshape(x, (x.shape[0], seq_length, 1))
-    # normalize
-    data_x_processed = x / float(len(alphabet))
-    # neuron at output layer
+    for i in range(num_inputs):
+        start = np.random.randint(len(alphabet)-2)  # start limit is 23
+        end = np.random.randint(low=start, high=min(start+max_len, len(alphabet)-1))  # end limit is 25
+        # data visualize
+        seq_in = alphabet[start:end+1]  # +1 to prevent start=end
+        seq_out = alphabet[end+1]
+        # print(seq_in, '->', seq_out)
+        # get ready for training
+        data_x.append([char_to_int[char] for char in seq_in])
+        data_y.append(end)
+    # pad_sequence will change [10] to [0, 0, 0, 0, 10] if max_len=5
+    data_x_processed = pad_sequences(data_x, maxlen=max_len, dtype='float32')
+    data_x_processed = np.reshape(data_x_processed, (data_x_processed.shape[0], max_len, 1))
+    data_x_processed = data_x_processed / float(len(alphabet))
     data_y_processed = np_utils.to_categorical(data_y)
+    return data_x, data_y, data_x_processed, data_y_processed
 
-    return alphabet, data_x, data_y, data_x_processed, data_y_processed, char_map_int, int_map_char
+
+
 

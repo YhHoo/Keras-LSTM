@@ -14,7 +14,10 @@ import numpy as np
 #
 # [D] Stateful LSTM Training(this is to train network to be able to match any no. of sequence to 1 alphabet, instead
 # of only 1 or 3. It also means the state of one batch are being used on next batch)
-# -->
+# --> use training_stateful , nb_epoch need to b very big because oni one batch for one epoch
+# --- But the accuracy is just 90% sth and the predict_random_starting() fails
+#
+# [E] Non-stateful but using Variable-length-char-to-1-char
 
 
 # fix random seed for reproducibility
@@ -22,28 +25,30 @@ np.random.seed(7)
 
 # initialize training data set
 data_x, data_y, data_x_processed, data_y_processed = \
-    kb1.n_char_to_one_char_data(sequence_length=1, window='time_step')  # the sequence length
+    kb1.variable_char_to_one_char(max_len=5)  # the sequence length
 
 # instantiate the lstm network
 lstm_network = kb1.LstmNetwork(data_x, data_y, data_x_processed, data_y_processed)
 
 # ----[CHOOSE ONLY 1 TRAINING]----
 # None stateful training
-# lstm_network.training(nb_epochs=5000, batch_size=len(data_x), shuffle=True)
+lstm_network.training(nb_epochs=1000, batch_size=len(data_x), shuffle=True)
 # training stateful
-lstm_network.training_stateful(nb_epoch=1200)
+# lstm_network.training_stateful(nb_epoch=1000)
 
 # test accuracy
-lstm_network.test_accuracy(stateful=True)
+lstm_network.test_accuracy(stateful=False)
 
 # prediction visualization
 lstm_network.predict_all()
 
 # prediction random
-# lstm_network.predict_random()
+lstm_network.predict_variable_length()
 
 # 5 prediction at a randomly chosen starting alphabet
 lstm_network.predict_random_starting('K')
+
+
 
 # Data Visualization before Training, Uncomment to watch if u are confused
 print('raw data:\n', kb1.alphabet)
