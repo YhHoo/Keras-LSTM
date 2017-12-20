@@ -4,6 +4,7 @@
 # to
 
 import numpy as np
+import matplotlib.pyplot as plt
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import LSTM
@@ -41,9 +42,11 @@ class LstmNetwork:
                             stateful=False))
         self.model.add(Dense(self.labels.shape[1], activation='softmax'))
         self.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+        # ----------------[Configure Saving and Loading]----------------
         # load previously saved model, lets only use ONE model for all stateless training to avoid confusion
         # this feature is to enable user to load the previously saved model and continue training from the there
-        # instead of starting again all the way from 0.
+        # instead of starting again all the way from 0. If you do not load, then it will train fr 0 again, and
+        # overwrite the previously saved model with the new one.
         filepath = 'alphabet_best_model_stateless.hdf5'
         if load_model:
             print('Loading previously saved model: {}'.format(filepath))
@@ -54,18 +57,25 @@ class LstmNetwork:
                                      verbose=1,
                                      save_best_only=True,
                                      mode='max',
-                                     period=5)
+                                     period=1)
         callback_list = [checkpoint]
-        # start training and saving best model
+        # ----------------[Training and Saving the Best]----------------
         print('Training Started...')
-        self.model.fit(self.inputs,
-                       self.labels,
-                       epochs=nb_epochs,
-                       batch_size=batch_size,
-                       verbose=2,
-                       shuffle=shuffle,
-                       callbacks=callback_list)
+        training_log = self.model.fit(self.inputs,
+                                      self.labels,
+                                      epochs=nb_epochs,
+                                      batch_size=batch_size,
+                                      verbose=2,
+                                      shuffle=shuffle,
+                                      callbacks=callback_list,
+                                      validation_split=0)  # split the 33% of training data for validation
         print('Training Completed and Best Model Saved!')
+        # ----------------[Training Records Visualization]----------------
+        plt.plot(training_log.history['acc'])
+        plt.title('Model Accuracy')
+        plt.xlabel('epoch')
+        plt.ylabel('accuracy')
+        plt.show()
 
     # this training turn on the Stateful, and reset the state after each epoch. It is to show the effect
     # of turning on Stateful for LSTM
@@ -79,7 +89,7 @@ class LstmNetwork:
         self.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
         # it now split the epoch into individual controlled iteration so we can reset state after every epoch
         print('Stateful Training Started...')
-        # -----------------[SAVING]------------------
+        # -----------------[Configure Saving]------------------
         # checkpoint- this will save the model during training every time the accuracy hits a new highest
         filepath = 'alphabet_best_model_stateful.hdf5'
         checkpoint = ModelCheckpoint(filepath=filepath,
@@ -89,6 +99,7 @@ class LstmNetwork:
                                      mode='max',  # for acc, it should b 'max'; for loss, 'min'
                                      period=5)  # no of epoch btw checkpoints
         callback_list = [checkpoint]
+        # ----------------[Training and Saving the Best]----------------
         # manually reset the state after each epoch
         for i in range(nb_epoch):
             self.model.fit(self.inputs,
@@ -101,6 +112,8 @@ class LstmNetwork:
             self.model.reset_states()
         print('Training Completed !')
 
+    # actually this function is not necessary because its value will be equal to the acc: on last epoch
+    # printed by the model.fit()
     def test_accuracy(self, stateful=False):
         print('Testing Model Accuracy...')
         if stateful:

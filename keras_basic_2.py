@@ -25,7 +25,7 @@ np.random.seed(7)
 
 # initialize training data set
 data_x, data_y, data_x_processed, data_y_processed = \
-    kb1.variable_char_to_one_char(max_len=5, num_inputs=3000)  # the sequence length
+    kb1.variable_char_to_one_char(max_len=5, num_inputs=1000)  # the sequence length
 
 # instantiate the lstm network
 lstm_network = kb1.LstmNetwork(data_x, data_y, data_x_processed, data_y_processed)
@@ -37,13 +37,13 @@ lstm_network.training(nb_epochs=500, batch_size=len(data_x), shuffle=True, load_
 # lstm_network.training_stateful(nb_epoch=1000)
 
 # test accuracy
-lstm_network.test_accuracy(stateful=False)
+# lstm_network.test_accuracy(stateful=False)
 
 # prediction visualization
 # lstm_network.predict_all()
 
 # prediction random
-lstm_network.predict_variable_length()
+# lstm_network.predict_variable_length()
 
 # 5 prediction at a randomly chosen starting alphabet
 # lstm_network.predict_random_starting('K')
