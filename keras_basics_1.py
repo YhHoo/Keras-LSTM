@@ -1,3 +1,8 @@
+# The source code are retrieved from
+# https://machinelearningmastery.com/understanding-stateful-lstm-recurrent-neural-networks-python-keras/
+# It uses Stateful and Stateless LSTM network, tgt with diff kind of inputs training set to train the model
+# to
+
 import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense
@@ -30,20 +35,37 @@ class LstmNetwork:
 
     # inputs and labels comes in pairs, as a supervised training set
     # nb_epochs is no of training it carries out with the same data set
-    def training(self, nb_epochs, batch_size, shuffle):
+    def training(self, nb_epochs, batch_size, shuffle, load_model=False):
         self.model.add(LSTM(32,
                             input_shape=(self.inputs.shape[1], self.inputs.shape[2]),
                             stateful=False))
         self.model.add(Dense(self.labels.shape[1], activation='softmax'))
         self.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+        # load previously saved model, lets only use ONE model for all stateless training to avoid confusion
+        # this feature is to enable user to load the previously saved model and continue training from the there
+        # instead of starting again all the way from 0.
+        filepath = 'alphabet_best_model_stateless.hdf5'
+        if load_model:
+            print('Loading previously saved model: {}'.format(filepath))
+            self.model.load_weights(filepath)
+        # create checkpoint to save best model while training
+        checkpoint = ModelCheckpoint(filepath=filepath,
+                                     monitor='acc',
+                                     verbose=1,
+                                     save_best_only=True,
+                                     mode='max',
+                                     period=5)
+        callback_list = [checkpoint]
+        # start training and saving best model
         print('Training Started...')
         self.model.fit(self.inputs,
                        self.labels,
                        epochs=nb_epochs,
                        batch_size=batch_size,
                        verbose=2,
-                       shuffle=shuffle)
-        print('Training Completed !')
+                       shuffle=shuffle,
+                       callbacks=callback_list)
+        print('Training Completed and Best Model Saved!')
 
     # this training turn on the Stateful, and reset the state after each epoch. It is to show the effect
     # of turning on Stateful for LSTM
@@ -57,8 +79,9 @@ class LstmNetwork:
         self.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
         # it now split the epoch into individual controlled iteration so we can reset state after every epoch
         print('Stateful Training Started...')
-        # checkpoint to save the model of best acc
-        filepath = 'alphabet_best_model.hdf5'
+        # -----------------[SAVING]------------------
+        # checkpoint- this will save the model during training every time the accuracy hits a new highest
+        filepath = 'alphabet_best_model_stateful.hdf5'
         checkpoint = ModelCheckpoint(filepath=filepath,
                                      monitor='acc',
                                      verbose=1,
@@ -66,6 +89,7 @@ class LstmNetwork:
                                      mode='max',  # for acc, it should b 'max'; for loss, 'min'
                                      period=5)  # no of epoch btw checkpoints
         callback_list = [checkpoint]
+        # manually reset the state after each epoch
         for i in range(nb_epoch):
             self.model.fit(self.inputs,
                            self.labels,
@@ -175,8 +199,7 @@ def n_char_to_one_char_data(sequence_length, window):
 
 
 # generate a dataset of input output pairs
-def variable_char_to_one_char(max_len=5):
-    num_inputs = 1000
+def variable_char_to_one_char(max_len=5, num_inputs=1000):
     # prevent max_len too big
     if max_len > 25:
         raise ValueError('max_len greater than 25, please lower it!')
@@ -190,7 +213,7 @@ def variable_char_to_one_char(max_len=5):
         # print(seq_in, '->', seq_out)
         # get ready for training
         data_x.append([char_to_int[char] for char in seq_in])
-        data_y.append(end)
+        data_y.append(char_to_int[seq_out])
     # pad_sequence will change [10] to [0, 0, 0, 0, 10] if max_len=5
     data_x_processed = pad_sequences(data_x, maxlen=max_len, dtype='float32')
     data_x_processed = np.reshape(data_x_processed, (data_x_processed.shape[0], max_len, 1))

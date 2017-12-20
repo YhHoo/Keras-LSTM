@@ -25,14 +25,14 @@ np.random.seed(7)
 
 # initialize training data set
 data_x, data_y, data_x_processed, data_y_processed = \
-    kb1.variable_char_to_one_char(max_len=5)  # the sequence length
+    kb1.variable_char_to_one_char(max_len=5, num_inputs=3000)  # the sequence length
 
 # instantiate the lstm network
 lstm_network = kb1.LstmNetwork(data_x, data_y, data_x_processed, data_y_processed)
 
 # ----[CHOOSE ONLY 1 TRAINING]----
-# None stateful training
-lstm_network.training(nb_epochs=1000, batch_size=len(data_x), shuffle=True)
+# Non stateful training
+lstm_network.training(nb_epochs=500, batch_size=len(data_x), shuffle=True, load_model=True)
 # training stateful
 # lstm_network.training_stateful(nb_epoch=1000)
 
@@ -40,22 +40,20 @@ lstm_network.training(nb_epochs=1000, batch_size=len(data_x), shuffle=True)
 lstm_network.test_accuracy(stateful=False)
 
 # prediction visualization
-lstm_network.predict_all()
+# lstm_network.predict_all()
 
 # prediction random
 lstm_network.predict_variable_length()
 
 # 5 prediction at a randomly chosen starting alphabet
-lstm_network.predict_random_starting('K')
-
-
+# lstm_network.predict_random_starting('K')
 
 # Data Visualization before Training, Uncomment to watch if u are confused
-print('raw data:\n', kb1.alphabet)
-print('Data_x:\n', data_x)
-print('Data_y:\n', data_y)
-print('Data_x_processed:\n', data_x_processed)
-print('Data_y_processed:\n', data_y_processed)
+# print('raw data:\n', kb1.alphabet)
+# print('Data_x:\n', data_x)
+# print('Data_y:\n', data_y)
+# print('Data_x_processed:\n', data_x_processed)
+# print('Data_y_processed:\n', data_y_processed)
 
 
 
