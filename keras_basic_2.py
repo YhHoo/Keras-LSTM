@@ -1,5 +1,6 @@
 import keras_basics_1 as kb1
 import numpy as np
+from sklearn.model_selection import StratifiedKFold
 
 # ----[Configure the Network]----
 # Firstly, the sequence_length, predict_all() & predict_random() are free to vary under any case
@@ -20,32 +21,32 @@ import numpy as np
 # [E] Non-stateful but using Variable-length-char-to-1-char
 
 
-# fix random seed for reproducibility
-np.random.seed(7)
+# seed if we wan the random data generated to be same all the time
+# np.random.seed(7)
 
 # initialize training data set
 data_x, data_y, data_x_processed, data_y_processed = \
     kb1.variable_char_to_one_char(max_len=5, num_inputs=1000)  # the sequence length
 
-# instantiate the lstm network
+# ----[instantiate the lstm network]----
 lstm_network = kb1.LstmNetwork(data_x, data_y, data_x_processed, data_y_processed)
 
 # ----[CHOOSE ONLY 1 TRAINING]----
 # Non stateful training
-lstm_network.training(nb_epochs=500, batch_size=len(data_x), shuffle=True, load_model=True)
+lstm_network.training(nb_epochs=1500, batch_size=len(data_x), shuffle=True, load_model=True)
 # training stateful
 # lstm_network.training_stateful(nb_epoch=1000)
 
-# test accuracy
+# ----[test accuracy]----
 # lstm_network.test_accuracy(stateful=False)
 
-# prediction visualization
+# ----[prediction visualization]----
 # lstm_network.predict_all()
 
-# prediction random
-# lstm_network.predict_variable_length()
+# ----[prediction random]----
+lstm_network.predict_variable_length()
 
-# 5 prediction at a randomly chosen starting alphabet
+# ----[5 prediction at a randomly chosen starting alphabet]----
 # lstm_network.predict_random_starting('K')
 
 # Data Visualization before Training, Uncomment to watch if u are confused
