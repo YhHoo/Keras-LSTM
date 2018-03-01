@@ -28,12 +28,18 @@ from sklearn.model_selection import StratifiedKFold
 data_x, data_y, data_x_processed, data_y_processed = \
     kb1.variable_char_to_one_char(max_len=5, num_inputs=1000)  # the sequence length
 
+# ----[Prepare Cross Validation Dataset]----
+kfold = StratifiedKFold(n_splits=10, shuffle=True, random_state=7)
+for train, test in kfold.split(data_x, data_y):
+    print('Train: ', train)
+    print('Test', test)
+
 # ----[instantiate the lstm network]----
-lstm_network = kb1.LstmNetwork(data_x, data_y, data_x_processed, data_y_processed)
+# lstm_network = kb1.LstmNetwork(data_x, data_y, data_x_processed, data_y_processed)
 
 # ----[CHOOSE ONLY 1 TRAINING]----
 # Non stateful training
-lstm_network.training(nb_epochs=1500, batch_size=len(data_x), shuffle=True, load_model=True)
+# lstm_network.training(nb_epochs=1500, batch_size=len(data_x), shuffle=True, load_model=True)
 # training stateful
 # lstm_network.training_stateful(nb_epoch=1000)
 
@@ -44,7 +50,7 @@ lstm_network.training(nb_epochs=1500, batch_size=len(data_x), shuffle=True, load
 # lstm_network.predict_all()
 
 # ----[prediction random]----
-lstm_network.predict_variable_length()
+# lstm_network.predict_variable_length()
 
 # ----[5 prediction at a randomly chosen starting alphabet]----
 # lstm_network.predict_random_starting('K')

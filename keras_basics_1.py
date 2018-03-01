@@ -1,7 +1,7 @@
 # The source code are retrieved from
 # https://machinelearningmastery.com/understanding-stateful-lstm-recurrent-neural-networks-python-keras/
 # It uses Stateful and Stateless LSTM network, tgt with diff kind of inputs training set to train the model
-# to
+# to recognize the alphabets sequence from A->Z
 
 import numpy as np
 import matplotlib.pyplot as plt
