@@ -38,7 +38,7 @@ for train, test in kfold.split(data_x, data_y):
 # lstm_network = kb1.LstmNetwork(data_x, data_y, data_x_processed, data_y_processed)
 
 # ----[CHOOSE ONLY 1 TRAINING]----
-# Non stateful training
+# Non stateful training(note that batch_size=len(data_x) means only 1 batch for 1 Epoch)
 # lstm_network.training(nb_epochs=1500, batch_size=len(data_x), shuffle=True, load_model=True)
 # training stateful
 # lstm_network.training_stateful(nb_epoch=1000)

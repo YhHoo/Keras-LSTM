@@ -47,7 +47,7 @@ class LstmNetwork:
         self.model.add(Dense(self.labels.shape[1], activation='softmax'))
         self.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
         # ----------------[Configure Saving and Loading]----------------
-        # load previously saved model, lets only use ONE model for all stateless training to avoid confusion
+        # load previously saved model. let's only use ONE model for all stateless training to avoid confusion
         # this feature is to enable user to load the previously saved model and continue training from the there
         # instead of starting again all the way from 0. If you do not load, then it will train fr 0 again, and
         # overwrite the previously saved model with the new one.
