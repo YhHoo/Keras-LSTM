@@ -37,9 +37,13 @@ class LstmNetwork:
     # inputs and labels comes in pairs, as a supervised training set
     # nb_epochs is no of training it carries out with the same data set
     def training(self, nb_epochs, batch_size, shuffle, load_model=False):
+        # Here we create a layer of LSTM with input sequence of self.input.shape[1], then to a layer of 32 neurons,
+        # then followed by activation specified by Dense before terminating at 26 outputs.
         self.model.add(LSTM(32,
                             input_shape=(self.inputs.shape[1], self.inputs.shape[2]),
                             stateful=False))
+        # Dense is jz an activation fn, with output dimension of 26, which is 'no of categories' for A->Z b4
+        # going thru a softmax activation fn
         self.model.add(Dense(self.labels.shape[1], activation='softmax'))
         self.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
         # ----------------[Configure Saving and Loading]----------------
@@ -233,7 +237,5 @@ def variable_char_to_one_char(max_len=5, num_inputs=1000):
     data_x_processed = data_x_processed / float(len(alphabet))
     data_y_processed = np_utils.to_categorical(data_y)
     return data_x, data_y, data_x_processed, data_y_processed
-
-
 
 
