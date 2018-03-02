@@ -110,7 +110,7 @@ class LstmNetwork:
                            self.labels,
                            epochs=1,
                            batch_size=batch_size,
-                           verbose=2,
+                           verbose=2,  # to print out acc: for every epoch
                            shuffle=False,
                            callbacks=callback_list)
             self.model.reset_states()
@@ -136,7 +136,7 @@ class LstmNetwork:
             # feed each of them into the trained model
             prediction = self.model.predict(x, verbose=0)
             index = np.argmax(prediction)
-            result = int_to_char[index]  # yh: index might not b int
+            result = int_to_char[index]  # yh: index might not be int
             seq_in = [int_to_char[values] for values in unit_input]
             print(seq_in, '->', result)
 
@@ -146,7 +146,7 @@ class LstmNetwork:
             # randomize
             unit_input_index = np.random.randint(len(self.x))
             unit_input = self.x[unit_input_index]
-            # convert into [samples, time steps, features] fr 2D
+            # convert into 3D [samples, time steps, features] fr 2D
             x = np.reshape(unit_input, (1, self.inputs.shape[1], self.inputs.shape[2]))
             x = x / float(len(alphabet))
             prediction = self.model.predict(x, verbose=0)
