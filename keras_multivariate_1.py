@@ -5,7 +5,7 @@ from pandas import read_csv
 from pandas import datetime
 import numpy as np
 
-
+# ------------------[DATA PROCESSING]----------------------
 def parser(x):
     return datetime.strptime(x, '%Y %m %d %H')
 
@@ -28,7 +28,7 @@ dataset['pollution'].fillna(0, inplace=True)
 dataset = dataset[24:]
 # visualize
 print(dataset.head(10))
-# save to file
+# save processed data to file
 dataset.to_csv('air_quality_dateset_processed.csv')
 
 
