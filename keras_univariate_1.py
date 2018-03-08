@@ -129,7 +129,7 @@ def read_fr_csv(filename):
 
 
 # read from csv
-series = read_fr_csv('shampoo-sales.csv')
+series = read_fr_csv('shampoo_sales_dataset.csv')
 
 # transform time series to stationary
 raw_values = series.values  # put only value in a list

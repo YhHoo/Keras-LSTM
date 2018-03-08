@@ -14,7 +14,8 @@ json_file = open('shampoo_model.json', 'r')
 loaded_json_model = json_file.read()
 json_file.close()
 lstm_model = model_from_json(loaded_json_model)
-# load weights into new model
+# load weights into new model, according to doc, weight has to be loaded fr .h5 only
+# bcaz json store only the structure of model, h5 store the weights
 lstm_model.load_weights('shampoo_model.h5')
 print('Model Loaded !')
 lstm_model.compile(loss='mean_squared_error', optimizer='adam')
