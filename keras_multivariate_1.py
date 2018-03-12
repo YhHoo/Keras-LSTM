@@ -62,20 +62,28 @@ Arguments:
         n_out: Number of observations as output (y).
         dropnan: Boolean whether or not to drop rows with NaN values.
 Returns:
-        Pandas DataFrame of series framed for supervised learning.
+        Pandas DataFrame of series framed for supervised learning.        
+YH:
+        Basically, for E.G. for a list = [1,2,3,4,5], if we set n_in=3, --> Input=[1, 2, 3]; 
+        n_out=1, --> [4], and so on. If n_in=2, --> Input=[1, 2] ; n_out=2 --> Output=[2, 3].
+        This is called multi-step forecast. 
+        Note that input and out means supervised training data pair.
+        When features>=2(multi-variate forecast), it will becomes n_in columns match to another n_out columns  
 '''
 
 
 def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
     # check whether is list or np matrix
-    n_vars = 1 if type() is list else data.shape[1]
+    n_vars = 1 if type(data) is list else data.shape[1]
     df = DataFrame(data)
     cols, names = [], []
-    # input sequence (t-n, ... t-1)
+    # input sequence (t-n, ... t-1) , n_in will decide how many terms in the sequence
+    # n_in means the no of items to be taken as training input
     for i in range(n_in, 0, -1):
         cols.append(df.shift(i))
         names += [('var%d(t-%d)' % (j+1, i)) for j in range(n_vars)]
-    # forecast sequence (t, t+1, ... t+n)
+
+    # forecast sequence (t, t+1, ... t+n), likewise, n_out decide no. of terms in the seq
     for i in range(0, n_out):
         cols.append(df.shift(-i))
         if i == 0:
@@ -89,3 +97,24 @@ def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
     if dropnan:
         agg.dropna(inplace=True)
     return agg
+
+
+data_mat = np.array([[1, 2], [10, 20], [100, 200], [1000, 2000]])
+test = series_to_supervised(data_mat, n_in=1, n_out=1, dropnan=True)
+print(test)
+
+
+# column = []
+# df_test = DataFrame([7, 8, 9, 10])
+# column.append(df_test)
+# column.append(df_test.shift(1))
+# column.append(df_test.shift(2))
+# all = concat(column, axis=1)
+#
+# print('append--------\n', column)
+# print('concat--------\n', all)
+
+
+
+
+
