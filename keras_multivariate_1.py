@@ -6,6 +6,7 @@ from pandas import read_csv
 from pandas import datetime
 from pandas import DataFrame
 from pandas import concat
+from sklearn.preprocessing import LabelEncoder
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -101,21 +102,15 @@ def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
     return agg
 
 
-data_mat = np.array([[1, 2], [10, 20], [100, 200], [1000, 2000]])
-test = series_to_supervised(data_mat, n_in=1, n_out=1, dropnan=True)
-print(test)
-
-
-column = []
-df_1 = DataFrame([1, 2, 3])
-df_2 = DataFrame([100, 200, 300])
-column.append(df_1)
-column.append(df_2)
-all = concat(column, axis=1)
-print(all)
-
-
-
-
+# data_mat = np.array([[1, 2], [10, 20], [100, 200], [1000, 2000]])
+# test = series_to_supervised(data_mat, n_in=1, n_out=1, dropnan=True)
+# print(test)
+data_values = dataset.values
+print(dataset.keys())
+encoder = LabelEncoder()
+# encode the wind dir(at column 5) into integers categories, e.g. SE->1, E->2 ...
+data_values[:, 4] = encoder.fit_transform(data_values[:, 4])
+# copy the array and cast to a 'float32'
+data_values = data_values.astype(dtype='float32')
 
 
