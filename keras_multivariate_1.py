@@ -1,6 +1,7 @@
 # this code and dataset are retrieved from
 # https://machinelearningmastery.com/multivariate-time-series-forecasting-lstms-keras/
-
+# AIM: frame the supervised learning problem as predicting the pollution at the current hour (t)
+# given the pollution measurement and weather conditions at the prior time step
 from pandas import read_csv
 from pandas import datetime
 from pandas import DataFrame
@@ -8,7 +9,7 @@ from pandas import concat
 import numpy as np
 import matplotlib.pyplot as plt
 
-# ------------------[DATA PROCESSING]----------------------
+# ------------------[STEP 1: DATA PROCESSING]----------------------
 # def parser(x):
 #     return datetime.strptime(x, '%Y %m %d %H')
 #
@@ -34,6 +35,7 @@ import matplotlib.pyplot as plt
 # # save processed data to file
 # dataset.to_csv('air_quality_dataset_processed.csv')
 
+# ------------------[STEP 2: DATA LOADING]----------------------
 # load the processed data into df
 dataset = read_csv('air_quality_dataset_processed.csv', index_col=0)
 
@@ -53,7 +55,7 @@ dataset = read_csv('air_quality_dataset_processed.csv', index_col=0)
 # plt.show()
 
 
-# ------------------[SERIES TO SUPERVISED FUNCTION]----------------------
+# ------------------[SERIES-TO-SUPERVISED FUNCTION]----------------------
 '''
 Frame a time series as a supervised learning dataset.
 Arguments:
@@ -104,15 +106,14 @@ test = series_to_supervised(data_mat, n_in=1, n_out=1, dropnan=True)
 print(test)
 
 
-# column = []
-# df_test = DataFrame([7, 8, 9, 10])
-# column.append(df_test)
-# column.append(df_test.shift(1))
-# column.append(df_test.shift(2))
-# all = concat(column, axis=1)
-#
-# print('append--------\n', column)
-# print('concat--------\n', all)
+column = []
+df_1 = DataFrame([1, 2, 3])
+df_2 = DataFrame([100, 200, 300])
+column.append(df_1)
+column.append(df_2)
+all = concat(column, axis=1)
+print(all)
+
 
 
 
