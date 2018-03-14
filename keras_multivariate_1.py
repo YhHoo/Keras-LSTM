@@ -155,7 +155,7 @@ history = model.fit(x=train_x,
                     verbose=2,
                     shuffle=False)
 
-plt.plot(history.history['acc'], label='train')
+plt.plot(history.history['loss'], label='train')
 plt.plot(history.history['val_loss'], label='test')
 plt.legend()
 plt.show()
@@ -169,9 +169,9 @@ test_x = test_x.reshape((test_x.shape[0], test_x.shape[2]))
 # fit_transform and inverse_transform mz b same !
 inv_yhat = np.concatenate((yhat, test_x[:, 1:]), axis=1)
 inv_yhat = scaler.inverse_transform(inv_yhat)
-inv_hat = inv_yhat[:, 0]  # take only first column
+inv_yhat = inv_yhat[:, 0]  # take only first column
 # invert scaling for ACTUAL
-test_y = test_y.reshape((len(test_y), 1))  # jz a list actually
+test_y = test_y.reshape((len(test_y), 1))  # b4 that jz a list actually, now make it array of Nx1
 inv_y = np.concatenate((test_y, test_x[:, 1:]), axis=1)
 inv_y = scaler.inverse_transform(inv_y)
 inv_y = inv_y[:, 0]  # take only first column
