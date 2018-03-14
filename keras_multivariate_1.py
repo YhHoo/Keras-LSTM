@@ -10,7 +10,7 @@ from pandas import concat
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 from sklearn.metrics import mean_squared_error
 from keras.models import Sequential
-from keras.layers import Dense, LSTM
+from keras.layers import Dense, LSTM, GRU, RNN
 import numpy as np
 import matplotlib.pyplot as plt
 
