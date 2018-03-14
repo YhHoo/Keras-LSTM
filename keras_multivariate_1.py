@@ -125,6 +125,8 @@ data_values = data_values.astype(dtype='float32')
 # normalize each features values (which are values within columns) in matrix to range of 0-1
 scaler = MinMaxScaler(feature_range=(0, 1))
 scaled_data_values = scaler.fit_transform(data_values)
+
+# ------------------[PREPARE FOR SUPERVISED TRAINING SET]----------------------
 # create supervised training data in df
 reframed_data_values = series_to_supervised(scaled_data_values, n_in=1, n_out=1)
 # drop column we dont want to predict
