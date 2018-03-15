@@ -108,11 +108,6 @@ def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
     return agg
 
 
-# ---[DEBUG]----
-# data_mat = np.array([[1, 2], [10, 20], [100, 200], [1000, 2000]])
-# test = series_to_supervised(data_mat, n_in=1, n_out=1, dropnan=True)
-# print(test) .
-
 # ------------------[DATA PROCESSING PART 2]----------------------
 # HERE WE AIM TO NORMALIZE ALL VALUES TO WITHIN 0-1 WITH DTYPE OF FLOAT32
 # get a copy of only the values into a matrix
@@ -125,58 +120,69 @@ data_values = data_values.astype(dtype='float32')
 # normalize each features values (which are values within columns) in matrix to range of 0-1
 scaler = MinMaxScaler(feature_range=(0, 1))
 scaled_data_values = scaler.fit_transform(data_values)
+transform_rows = data_values.shape[1]
 
 # ------------------[PREPARE FOR SUPERVISED TRAINING SET]----------------------
 # create supervised training data in df
-reframed_data_values = series_to_supervised(scaled_data_values, n_in=1, n_out=1)
+reframed_df = series_to_supervised(scaled_data_values, n_in=1, n_out=1)
+# columns index in df to be dropped
+drop_col = [3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15]
 # drop column we dont want to predict
-reframed_data_values.drop(reframed_data_values.columns[[9, 10, 11, 12, 13, 14, 15]],  # this return index of column
-                          axis=1,
-                          inplace=True)
-# now prepare training and test sets, take first year for training, the rest for testing
-n_train_hours = 365 * 24  # total hours/rows in one year
-train_set = reframed_data_values.values[:n_train_hours, :]
-test_set = reframed_data_values.values[n_train_hours:, :]
-# split into input and output
-train_x, train_y = train_set[:, :-1], train_set[:, -1]
-test_x, test_y = test_set[:, :-1], test_set[:, -1]
-# reshape input to be 3D [samples, timesteps, features]
-train_x = train_x.reshape((train_x.shape[0], 1, train_x.shape[1]))  # (8760x8)->(8760x1x8)
-test_x = test_x.reshape((test_x.shape[0], 1, test_x.shape[1]))
+reframed_df_less = reframed_df.drop(reframed_df.columns[drop_col],  # this return index of column
+                                    axis=1)
+# split data pair into x and y
+all_x = reframed_df_less.values[:, :-1]
+all_y = reframed_df_less.values[:, -1]
+# reshape fr 2s to 3d (samples, time step, features)
+all_x_3d = all_x.reshape((all_x.shape[0], 1, all_x.shape[1]))
+
 
 # ------------------[TRAINING AND VALIDATION]----------------------
 model = Sequential()
-model.add(LSTM(50, input_shape=(train_x.shape[1], train_x.shape[2])))  # input_shape = (1,8)
+model.add(LSTM(50,
+               input_shape=(all_x_3d.shape[1], all_x_3d.shape[2])))  # input_shape = (time step, feature)
 model.add(Dense(1))
-model.compile(loss='mae', optimizer='adam', metrics=['accuracy'])
-history = model.fit(x=train_x,
-                    y=train_y,
+model.compile(loss='mean_absolute_error',
+              optimizer='adam')
+history = model.fit(x=all_x_3d,
+                    y=all_y,
                     epochs=50,
                     batch_size=72,
-                    validation_data=(test_x, test_y),
+                    validation_split=0.8,
                     verbose=2,
                     shuffle=False)
+#
+# plt.plot(history.history['loss'], label='train_loss')
+# plt.plot(history.history['val_loss'], label='test_loss')
+# plt.legend()
+# plt.show()
 
-plt.plot(history.history['loss'], label='train')
-plt.plot(history.history['val_loss'], label='test')
-plt.legend()
-plt.show()
 
-yhat = model.predict(test_x)
-# change back to 2D
-test_x = test_x.reshape((test_x.shape[0], test_x.shape[2]))
-# invert scaling for FORECAST
-# note that we replace the first column of test_x as yhat before pass to inverse transform
-# this is because both of them are pollution, and the scaler requires that dim of matrix during
-# fit_transform and inverse_transform mz b same !
-inv_yhat = np.concatenate((yhat, test_x[:, 1:]), axis=1)
-inv_yhat = scaler.inverse_transform(inv_yhat)
-inv_yhat = inv_yhat[:, 0]  # take only first column
-# invert scaling for ACTUAL
-test_y = test_y.reshape((len(test_y), 1))  # b4 that jz a list actually, now make it array of Nx1
-inv_y = np.concatenate((test_y, test_x[:, 1:]), axis=1)
-inv_y = scaler.inverse_transform(inv_y)
-inv_y = inv_y[:, 0]  # take only first column
-# manual calc of RMSE
-rmse = sqrt(mean_squared_error(inv_y, inv_yhat))
-print('RMSE: %.3f' % rmse)
+# ------------------[RMSE EVALUATION]----------------------
+one_year_hour = 365*24
+x = all_x[one_year_hour:, :]
+x = np.reshape(x, (x.shape[0], 1, x.shape[1]))
+prediction = model.predict(x)
+# Prepare a matrix that has same no of columns as the matrix during scaler.fit_transform
+prediction = np.concatenate((prediction, all_x[one_year_hour:, 1:]), axis=1)
+zeros = np.zeros((prediction.shape[0], (transform_rows-prediction.shape[1])))
+prediction = np.concatenate((prediction, zeros), axis=1)
+prediction = scaler.inverse_transform(prediction)
+prediction = prediction[:, 0]  # PREDICTION done
+prediction = prediction.reshape((prediction.shape[0], 1))
+
+# prepare for actual
+actual = all_y[one_year_hour:]
+actual = actual.reshape((actual.shape[0], 1))
+zeros = np.zeros((actual.shape[0], (transform_rows-actual.shape[1])))
+actual = np.concatenate((actual, zeros), axis=1)
+actual = scaler.inverse_transform(actual)
+actual = actual[:, 0]
+actual = actual.reshape((actual.shape[0], 1))
+
+# calculate rmse (since we are calc rmse, we hv to make sure our loss is mean absolute error
+# instead of mean square error, otherwise the training optimizes the mse, and rmse will be bigger
+# in the end)
+rmse = sqrt(mean_squared_error(actual, prediction))
+print('RMSE = ', rmse)
+
