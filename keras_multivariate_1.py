@@ -140,7 +140,7 @@ all_x_3d = all_x.reshape((all_x.shape[0], 1, all_x.shape[1]))
 # ------------------[TRAINING AND VALIDATION]----------------------
 model = Sequential()
 model.add(LSTM(50,
-               input_shape=(all_x_3d.shape[1], all_x_3d.shape[2])))  # input_shape = (time step, feature)
+               input_shape=(all_x_3d.shape[1], all_x_3d.shape[2]),))  # input_shape = (time step, feature)
 model.add(Dense(1))
 model.compile(loss='mean_absolute_error',
               optimizer='adam')
