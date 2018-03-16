@@ -140,22 +140,22 @@ all_x_3d = all_x.reshape((all_x.shape[0], 1, all_x.shape[1]))
 # ------------------[TRAINING AND VALIDATION]----------------------
 model = Sequential()
 model.add(LSTM(50,
-               input_shape=(all_x_3d.shape[1], all_x_3d.shape[2]),))  # input_shape = (time step, feature)
+               input_shape=(all_x_3d.shape[1], all_x_3d.shape[2])))  # input_shape = (time step, feature)
 model.add(Dense(1))
 model.compile(loss='mean_absolute_error',
               optimizer='adam')
 history = model.fit(x=all_x_3d,
                     y=all_y,
                     epochs=50,
-                    batch_size=72,
+                    batch_size=72,  # no of samples per gradient update
                     validation_split=0.8,
                     verbose=2,
                     shuffle=False)
-#
-# plt.plot(history.history['loss'], label='train_loss')
-# plt.plot(history.history['val_loss'], label='test_loss')
-# plt.legend()
-# plt.show()
+# Plotting of loss over epoch
+plt.plot(history.history['loss'], label='train_loss')
+plt.plot(history.history['val_loss'], label='test_loss')
+plt.legend()
+plt.show()
 
 
 # ------------------[RMSE EVALUATION]----------------------
