@@ -163,7 +163,7 @@ if __name__ == '__main__':
         # train the model for epochs-times(changeable), returned a trained model
         lstm_model = fit_lstm(train_data_scaled,
                               batch_size=batch_size,
-                              nb_epoch=1000,
+                              nb_epoch=2000,
                               neurons=4)
         # change the input array fr 2d to 3d
         train_data_reshaped = train_data_scaled[:, 0].reshape(len(train_data_scaled), 1, 1)
@@ -171,16 +171,14 @@ if __name__ == '__main__':
         lstm_model.predict(train_data_reshaped, batch_size=batch_size)
         print('Training {}/{} completed'.format(r+1, repeats))
 
-        # -----[Walk Forward Validation]---- with TEST data set
+        # -----[Walk Forward Validation]---- with TEST data set (it means, input only one month data into
+        # predict() for everytime and get a prediction for another month as return)
         predictions = []
         for i in range(len(test_data_scaled)):
             # Input test data into the trained model and store the model prediction in np array yHat
-            # But here did it one by one, month by month instead of one shot
+            # But here did it one by one, month by month prediction instead of all at once
             X, y = test_data_scaled[i, 0:-1], test_data_scaled[i, -1]  # y is trivial
-            print(X)
-            print(y)
             yhat = forecast_lstm(lstm_model, batch_size=batch_size, X=X)
-            print(yhat)
             # invert scaling
             yhat = invert_scale(scaler, X, yhat)
             # invert differencing
