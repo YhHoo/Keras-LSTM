@@ -81,13 +81,12 @@ def fit_lstm(train, batch_size, nb_epoch, neurons):
     model = Sequential()
     # neurons being the no. of memory blocks.
     # putting a LSTM layer into a keras model and compile
-    # batch size defines the number of data are feed into the network during each epoch
     # batch_input_shape is a tuple that defines expected no of observation to read each batch,
     # the no of time step and no of features.
     # then compile the network into efficient symbolic rep using tensorflow as backend math lib.
     # stateful=0 to ensure saved and loaded model giv same prediction with trained model.
     # neurons of LSTM means the dim of outer space
-    model.add(LSTM(neurons, batch_input_shape=(batch_size, X.shape[1], X.shape[2]), stateful=0))
+    model.add(LSTM(neurons, batch_input_shape=(batch_size, X.shape[1], X.shape[2]), stateful=1))
     model.add(Dense(1))
     model.compile(loss='mean_squared_error', optimizer='adam')
     # start training the model with train data by iterating for a no. specified by epoch
@@ -95,10 +94,9 @@ def fit_lstm(train, batch_size, nb_epoch, neurons):
         # epochs is the no. of iteration the model is trained over d entire data provided
         # YH: i tink this 'for loop' is to provide control for us to reset the state everytime an epoch
         # is completed. If we do not wish to reset everytime, we can control iteration no by
-        # epochs inside fit()
-        model.fit(X, y, epochs=1, batch_size=batch_size, verbose=0, shuffle=False)
+        # epochs inside fit(). Basically here, the state is preserved in one epoch only.
+        model.fit(X, y, epochs=1, batch_size=batch_size, verbose=2, shuffle=False)
         model.reset_states()
-        print('Epoch {}/{}'.format(i, nb_epoch))
     return model
 
 
@@ -130,15 +128,18 @@ def read_fr_csv(filename):
 
 # read from csv
 series = read_fr_csv('shampoo_sales_dataset.csv')
-
+# print(series)
+# print('ORI: ', series.shape)
 # transform time series to stationary
 raw_values = series.values  # put only value in a list
 diff_values = difference(raw_values, interval=1)
-
+# print('DIFFERENCE: ', len(diff_values))
+# print(diff_values)
 # transform data to supervised learning
 supervised = timeseries_to_supervised(diff_values, lag=1)
 supervised_values = supervised.values
-
+# print('SUPERVISED: ', supervised_values.shape)
+# print(supervised_values)
 # split data into train and test
 # note that exact index is not used, instead, -12 means the 12th index from the last
 train_data, test_data = supervised_values[0:-12], supervised_values[-12:]
@@ -153,17 +154,21 @@ if __name__ == '__main__':
     # repeat the same training to find the best
     repeats = 1
     error_scores = []
+    batch_size = 1
     for r in range(repeats):
         # timer
         start = time.clock()
 
         # -----[Training of Model]---- with TRAIN data set
         # train the model for epochs-times(changeable), returned a trained model
-        lstm_model = fit_lstm(train_data_scaled, 1, 1000, 4)
+        lstm_model = fit_lstm(train_data_scaled,
+                              batch_size=batch_size,
+                              nb_epoch=1000,
+                              neurons=4)
         # change the input array fr 2d to 3d
         train_data_reshaped = train_data_scaled[:, 0].reshape(len(train_data_scaled), 1, 1)
         # forecast the entire training data set to build up state for forecasting
-        lstm_model.predict(train_data_reshaped, batch_size=1)
+        lstm_model.predict(train_data_reshaped, batch_size=batch_size)
         print('Training {}/{} completed'.format(r+1, repeats))
 
         # -----[Walk Forward Validation]---- with TEST data set
@@ -172,7 +177,10 @@ if __name__ == '__main__':
             # Input test data into the trained model and store the model prediction in np array yHat
             # But here did it one by one, month by month instead of one shot
             X, y = test_data_scaled[i, 0:-1], test_data_scaled[i, -1]  # y is trivial
-            yhat = forecast_lstm(lstm_model, 1, X)
+            print(X)
+            print(y)
+            yhat = forecast_lstm(lstm_model, batch_size=batch_size, X=X)
+            print(yhat)
             # invert scaling
             yhat = invert_scale(scaler, X, yhat)
             # invert differencing
@@ -208,7 +216,8 @@ if __name__ == '__main__':
 
 # ---------------------[Persistence Model Forecast]------------------------------
 # The persistence forecast is where the observation from the prior time step (t-1)
-# is used to predict the observation at the current time step (t).
+# is used to compare with the observation at the current time step (t). This is sth
+# useless
 # -------------------------------------------------------------------------------
 
 # # put all data in sales column into a list

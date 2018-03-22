@@ -1,3 +1,10 @@
+'''
+This code is retrieved from
+https://machinelearningmastery.com/seed-state-lstms-time-series-forecasting-python/
+It let us test the RMSE for 2 cases, one with state during prediction and without.
+Use this activity as a test harness for state analysis for LSTM
+'''
+
 from pandas import DataFrame
 from pandas import Series
 from pandas import concat
@@ -96,11 +103,8 @@ def experiment(repeats, series, seed):
     # transform data to be stationary
     raw_values = series.values
     diff_values = difference(raw_values, 1)
-    print(series.head())
-    print('DIFFERENCE: \n', diff_values)
     # transform data to be supervised learning
     supervised = timeseries_to_supervised(diff_values, 1)
-    print('SUPERVISED \n', supervised)
     supervised_values = supervised.values
     # split data into train and test-sets
     train, test = supervised_values[0:-12], supervised_values[-12:]
@@ -124,6 +128,7 @@ def experiment(repeats, series, seed):
         test_reshaped = test_scaled[:, 0]
         test_reshaped = test_reshaped.reshape(len(test_reshaped), 1, 1)
         output = lstm_model.predict(test_reshaped, batch_size=batch_size)
+        print(output)
         predictions = list()
         for i in range(len(output)):
             yhat = output[i, 0]
@@ -149,7 +154,7 @@ series = read_csv('shampoo_sales_dataset.csv',
                   squeeze=True,
                   date_parser=parser)
 # experiment
-repeats = 30
+repeats = 1
 results = DataFrame()
 # with seeding
 with_seed = experiment(repeats, series, True)
@@ -160,5 +165,5 @@ results['without-seed'] = without_seed
 # summarize results
 print(results.describe())
 # save boxplot
-results.boxplot()
-pyplot.savefig('boxplot.png')
+# results.boxplot()
+# pyplot.savefig('boxplot.png')
