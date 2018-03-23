@@ -46,18 +46,18 @@ dataset = read_csv('air_quality_dataset_processed.csv', index_col=0)
 
 # ------------------[DATA VISUALIZE]----------------------
 # # extract only the data in a matrix
-dataset_values = dataset.values
-# # specify the position of the plot in subplot
-subplot_index = 1
-# # select only the column index that we want to plot
-groups = [0, 1, 2, 3, 4, 5, 6, 7]
-# creating 7 subplots
-for group in groups:
-    plt.subplot(len(groups), 1, subplot_index)
-    plt.plot(dataset_values[:, group])
-    plt.title(dataset.columns[group], y=0.5, loc='right')  # take column's name
-    subplot_index += 1
-plt.show()
+# dataset_values = dataset.values
+# # # specify the position of the plot in subplot
+# subplot_index = 1
+# # # select only the column index that we want to plot
+# groups = [0, 1, 2, 3, 4, 5, 6, 7]
+# # creating 7 subplots
+# for group in groups:
+#     plt.subplot(len(groups), 1, subplot_index)
+#     plt.plot(dataset_values[:, group])
+#     plt.title(dataset.columns[group], y=0.5, loc='right')  # take column's name
+#     subplot_index += 1
+# plt.show()
 
 
 # ------------------[SERIES-TO-SUPERVISED FUNCTION]----------------------
@@ -113,7 +113,7 @@ def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
 # get a copy of only the values into a matrix
 data_values = dataset.values  # Total = 5 * 365 * 24 = 43800 (8760/year)
 print(dataset.columns.values)
-print(data_values[:5])
+print(data_values[0])
 # encode the wind dir(at column 5) into integers categories, e.g. SE->1, E->2 ...
 encoder = LabelEncoder()
 data_values[:, 4] = encoder.fit_transform(data_values[:, 4])
@@ -122,37 +122,58 @@ data_values = data_values.astype(dtype='float32')
 # normalize each features values (which are values within columns) in matrix to range of 0-1
 scaler = MinMaxScaler(feature_range=(0, 1))
 scaled_data_values = scaler.fit_transform(data_values)
+print(scaled_data_values[0])
 transform_rows = data_values.shape[1]
 
 # ------------------[PREPARE FOR SUPERVISED TRAINING SET]----------------------
 # create supervised training data in df
 reframed_df = series_to_supervised(scaled_data_values, n_in=1, n_out=1)
-# columns index in df to be dropped
-drop_col = [3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15]
+
+# drop first 99 rows so that it is 43700 samples for batch size to be 100
+reframed_df = reframed_df[:-99]
+print(reframed_df.shape)
+
+# columns index in df to be dropped (0-7=input, 8=label)
+drop_col = [4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15]
 # drop column we dont want to predict
 reframed_df_less = reframed_df.drop(reframed_df.columns[drop_col],  # this return index of column
                                     axis=1)
 # split data pair into x and y
 all_x = reframed_df_less.values[:, :-1]
 all_y = reframed_df_less.values[:, -1]
+# print(all_x.shape)
+# print(all_y.shape)
 # reshape fr 2s to 3d (samples, time step, features)
 all_x_3d = all_x.reshape((all_x.shape[0], 1, all_x.shape[1]))
 
-
 # ------------------[TRAINING AND VALIDATION]----------------------
-# model = Sequential()
-# model.add(LSTM(50,
-#                input_shape=(all_x_3d.shape[1], all_x_3d.shape[2])))  # input_shape = (time step, feature)
-# model.add(Dense(1))
-# model.compile(loss='mean_absolute_error',
-#               optimizer='adam')
-# history = model.fit(x=all_x_3d,
-#                     y=all_y,
-#                     epochs=50,
-#                     batch_size=72,  # no of samples per gradient update
-#                     validation_split=0.8,
-#                     verbose=2,
-#                     shuffle=False)
+nb_epoch = 50
+batch_size = 50
+history = []
+
+model = Sequential()
+model.add(LSTM(32,
+               batch_input_shape=(batch_size, all_x_3d.shape[1], all_x_3d.shape[2]),
+               return_sequences=True,
+               stateful=True))  # input_shape = (time step, feature)
+model.add(LSTM(32,
+               return_sequences=True,
+               stateful=True))
+model.add(LSTM(32,
+               stateful=True))
+model.add(Dense(1))
+model.compile(loss='mean_absolute_error',
+              optimizer='adam')
+for i in range(nb_epoch):
+    model.fit(x=all_x_3d,
+              y=all_y,
+              epochs=100,
+              batch_size=batch_size,  # no of samples per gradient update
+              validation_split=0.5,
+              verbose=2,
+              shuffle=False)
+    model.reset_states()
+# # model.reset_states()
 # # Plotting of loss over epoch
 # plt.plot(history.history['loss'], label='train_loss')
 # plt.plot(history.history['val_loss'], label='test_loss')
