@@ -4,11 +4,21 @@ import matplotlib.pyplot as plt
 from keras.models import Sequential
 from keras.layers import LSTM, Dense
 from keras.optimizers import SGD
-from sklearn.preprocessing import StandardScaler
-data = np.array([1, 2, 3, 4, 5]).reshape((5, 1))
-scaler = StandardScaler()
-data_scaled = scaler.fit_transform(data)
-print(data_scaled)
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+
+
+def test_label_encoder():
+    l = ['N', 'W', 'S', 'EA', 'E']
+    encoder = LabelEncoder()
+    l_encode = encoder.fit_transform(l)
+    print(l_encode)
+
+
+def test_standard_scaler():
+    data = np.array([1, 2, 3, 4, 5]).reshape((5, 1))
+    scaler = StandardScaler()
+    data_scaled = scaler.fit_transform(data)
+    print(data_scaled)
 
 
 def difference(datalist, interval=1):

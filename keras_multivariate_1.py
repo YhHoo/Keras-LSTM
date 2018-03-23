@@ -46,18 +46,18 @@ dataset = read_csv('air_quality_dataset_processed.csv', index_col=0)
 
 # ------------------[DATA VISUALIZE]----------------------
 # # extract only the data in a matrix
-# dataset_values = dataset.values
+dataset_values = dataset.values
 # # specify the position of the plot in subplot
-# subplot_index = 1
+subplot_index = 1
 # # select only the column index that we want to plot
-# groups = [0, 1, 2, 3, 5, 6, 7]
-# # creating 7 subplots
-# for group in groups:
-#     plt.subplot(len(groups), 1, subplot_index)
-#     plt.plot(dataset_values[:, group])
-#     plt.title(dataset.columns[group], y=0.5, loc='right')  # take column's name
-#     subplot_index += 1
-# plt.show()
+groups = [0, 1, 2, 3, 4, 5, 6, 7]
+# creating 7 subplots
+for group in groups:
+    plt.subplot(len(groups), 1, subplot_index)
+    plt.plot(dataset_values[:, group])
+    plt.title(dataset.columns[group], y=0.5, loc='right')  # take column's name
+    subplot_index += 1
+plt.show()
 
 
 # ------------------[SERIES-TO-SUPERVISED FUNCTION]----------------------
@@ -111,7 +111,9 @@ def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
 # ------------------[DATA PROCESSING PART 2]----------------------
 # HERE WE AIM TO NORMALIZE ALL VALUES TO WITHIN 0-1 WITH DTYPE OF FLOAT32
 # get a copy of only the values into a matrix
-data_values = dataset.values
+data_values = dataset.values  # Total = 5 * 365 * 24 = 43800 (8760/year)
+print(dataset.columns.values)
+print(data_values[:5])
 # encode the wind dir(at column 5) into integers categories, e.g. SE->1, E->2 ...
 encoder = LabelEncoder()
 data_values[:, 4] = encoder.fit_transform(data_values[:, 4])
@@ -138,51 +140,51 @@ all_x_3d = all_x.reshape((all_x.shape[0], 1, all_x.shape[1]))
 
 
 # ------------------[TRAINING AND VALIDATION]----------------------
-model = Sequential()
-model.add(LSTM(50,
-               input_shape=(all_x_3d.shape[1], all_x_3d.shape[2])))  # input_shape = (time step, feature)
-model.add(Dense(1))
-model.compile(loss='mean_absolute_error',
-              optimizer='adam')
-history = model.fit(x=all_x_3d,
-                    y=all_y,
-                    epochs=50,
-                    batch_size=72,  # no of samples per gradient update
-                    validation_split=0.8,
-                    verbose=2,
-                    shuffle=False)
-# Plotting of loss over epoch
-plt.plot(history.history['loss'], label='train_loss')
-plt.plot(history.history['val_loss'], label='test_loss')
-plt.legend()
-plt.show()
+# model = Sequential()
+# model.add(LSTM(50,
+#                input_shape=(all_x_3d.shape[1], all_x_3d.shape[2])))  # input_shape = (time step, feature)
+# model.add(Dense(1))
+# model.compile(loss='mean_absolute_error',
+#               optimizer='adam')
+# history = model.fit(x=all_x_3d,
+#                     y=all_y,
+#                     epochs=50,
+#                     batch_size=72,  # no of samples per gradient update
+#                     validation_split=0.8,
+#                     verbose=2,
+#                     shuffle=False)
+# # Plotting of loss over epoch
+# plt.plot(history.history['loss'], label='train_loss')
+# plt.plot(history.history['val_loss'], label='test_loss')
+# plt.legend()
+# plt.show()
 
 
 # ------------------[RMSE EVALUATION]----------------------
-one_year_hour = 365*24
-x = all_x[one_year_hour:, :]
-x = np.reshape(x, (x.shape[0], 1, x.shape[1]))
-prediction = model.predict(x)
-# Prepare a matrix that has same no of columns as the matrix during scaler.fit_transform
-prediction = np.concatenate((prediction, all_x[one_year_hour:, 1:]), axis=1)
-zeros = np.zeros((prediction.shape[0], (transform_rows-prediction.shape[1])))
-prediction = np.concatenate((prediction, zeros), axis=1)
-prediction = scaler.inverse_transform(prediction)
-prediction = prediction[:, 0]  # PREDICTION done
-prediction = prediction.reshape((prediction.shape[0], 1))
-
-# prepare for actual
-actual = all_y[one_year_hour:]
-actual = actual.reshape((actual.shape[0], 1))
-zeros = np.zeros((actual.shape[0], (transform_rows-actual.shape[1])))
-actual = np.concatenate((actual, zeros), axis=1)
-actual = scaler.inverse_transform(actual)
-actual = actual[:, 0]
-actual = actual.reshape((actual.shape[0], 1))
+# one_year_hour = 365*24
+# x = all_x[one_year_hour:, :]
+# x = np.reshape(x, (x.shape[0], 1, x.shape[1]))
+# prediction = model.predict(x)
+# # Prepare a matrix that has same no of columns as the matrix during scaler.fit_transform
+# prediction = np.concatenate((prediction, all_x[one_year_hour:, 1:]), axis=1)
+# zeros = np.zeros((prediction.shape[0], (transform_rows-prediction.shape[1])))
+# prediction = np.concatenate((prediction, zeros), axis=1)
+# prediction = scaler.inverse_transform(prediction)
+# prediction = prediction[:, 0]  # PREDICTION done
+# prediction = prediction.reshape((prediction.shape[0], 1))
+#
+# # prepare for actual
+# actual = all_y[one_year_hour:]
+# actual = actual.reshape((actual.shape[0], 1))
+# zeros = np.zeros((actual.shape[0], (transform_rows-actual.shape[1])))
+# actual = np.concatenate((actual, zeros), axis=1)
+# actual = scaler.inverse_transform(actual)
+# actual = actual[:, 0]
+# actual = actual.reshape((actual.shape[0], 1))
 
 # calculate rmse (since we are calc rmse, we hv to make sure our loss is mean absolute error
 # instead of mean square error, otherwise the training optimizes the mse, and rmse will be bigger
 # in the end)
-rmse = sqrt(mean_squared_error(actual, prediction))
-print('RMSE = ', rmse)
+# rmse = sqrt(mean_squared_error(actual, prediction))
+# print('RMSE = ', rmse)
 
