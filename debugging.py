@@ -4,7 +4,21 @@ import matplotlib.pyplot as plt
 from keras.models import Sequential
 from keras.layers import LSTM, Dense
 from keras.optimizers import SGD
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+from functools import reduce
+from sklearn.preprocessing import StandardScaler, LabelEncoder, MinMaxScaler
+from keras.preprocessing.sequence import pad_sequences
+
+
+# this returns a list of factors of n
+def factors(n):
+    factor_list = reduce(list.__add__, ([i, n//i] for i in range(1, int(pow(n, 0.5) + 1)) if n % i == 0))
+    return factor_list
+
+
+def fill_up_cavity():
+    data_in = [[1, 2, 3], [5, 6, 7, 8], [7, 8], [9]]
+    data_in_filled_up = pad_sequences(data_in, maxlen=5, dtype='float32')
+    print(data_in_filled_up)
 
 
 def test_label_encoder():
@@ -12,6 +26,16 @@ def test_label_encoder():
     encoder = LabelEncoder()
     l_encode = encoder.fit_transform(l)
     print(l_encode)
+
+
+def max_min_scale():
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    dummy = np.array([[1, 2, 3, 4, -5],
+                      [11, 22, 33, 44, -55],
+                      [9, 9, 9, 9, -99],
+                      [5, 5, 5, 5, -500]])
+    dummy2 = scaler.fit_transform(dummy)
+    print(dummy2)
 
 
 def test_standard_scaler():
@@ -33,6 +57,7 @@ def inverse_difference(diff_list, datalist):
     for i in range(len(diff_list)):
         inv_list.append(datalist[i] + diff_list[i])
     return inv_list
+
 
 
 # sine_wave = [sin(radians(x)) for x in range(360)]
@@ -59,10 +84,5 @@ def inverse_difference(diff_list, datalist):
 # model.compile(optimizer=algorithm, loss='mean_squared_error', metrics=['accuracy'])
 
 
-# scaler = MinMaxScaler(feature_range=(0, 1))
-#
-# dummy = np.array([[1, 2, 3, 4, 5],
-#                   [11, 22, 33, 44, 55],
-#                   [9, 9, 9, 9, 99],
-#                   [5, 5, 5, 5, 500]])
+
 # dummy[1:3, 2:4] = np.array([[7, 7], [7, 7]])

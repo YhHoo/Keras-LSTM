@@ -8,6 +8,7 @@ from pandas import datetime
 from pandas import DataFrame
 from pandas import concat
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
+from functools import reduce
 from sklearn.metrics import mean_squared_error
 from keras.models import Sequential
 from keras.layers import Dense, LSTM, GRU, RNN
@@ -108,71 +109,120 @@ def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
     return agg
 
 
-# ------------------[DATA PROCESSING PART 2]----------------------
-# HERE WE AIM TO NORMALIZE ALL VALUES TO WITHIN 0-1 WITH DTYPE OF FLOAT32
-# get a copy of only the values into a matrix
-data_values = dataset.values  # Total = 5 * 365 * 24 = 43800 (8760/year)
-print(dataset.columns.values)
-print(data_values[0])
-# encode the wind dir(at column 5) into integers categories, e.g. SE->1, E->2 ...
-encoder = LabelEncoder()
-data_values[:, 4] = encoder.fit_transform(data_values[:, 4])
-# copy the array and cast to a 'float32'
-data_values = data_values.astype(dtype='float32')
-# normalize each features values (which are values within columns) in matrix to range of 0-1
-scaler = MinMaxScaler(feature_range=(0, 1))
-scaled_data_values = scaler.fit_transform(data_values)
-print(scaled_data_values[0])
-transform_rows = data_values.shape[1]
+# this converts the data in 'air_quality_dataset_processed.csv' into data ready for
+# supervised training. The PRINT line is to let us have a look on how the data are being
+# processed and what it ends up as.
+def prepare_data(n_in=1, n_out=1, train_split=0.6):
+    data = read_csv('air_quality_dataset_processed.csv', index_col=0)
+    # encode dir into integers, e.g. E->1, SE->2 ...
+    encoder = LabelEncoder()
+    data.iloc[:, 4] = encoder.fit_transform(data['wnd_dir'][:])
+    # All FEATURE = [pollution | dew  | temp |  press | wnd_dir | wnd_spd | snow | rain]
+    # drop off unwanted columns features
+    features_to_drop = ['press', 'wnd_dir', 'wnd_spd', 'snow', 'rain']
+    data.drop(features_to_drop, inplace=True, axis=1)
+    # get a matrix copy of all values in the df and convert them to float for scaling
+    data_values = data.values.astype(dtype='float32')
 
-# ------------------[PREPARE FOR SUPERVISED TRAINING SET]----------------------
-# create supervised training data in df
-reframed_df = series_to_supervised(scaled_data_values, n_in=1, n_out=1)
+    # -----------[SCALING]-----------
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    data_values = scaler.fit_transform(data_values)
+    print('B4 PROCESSED----------------\n', data.head())
+    print('AFTER PROCESSED-------------\n', data_values[:5])
+
+    # -----------[PREPARE FOR SUPERVISED TRAINING]-----------
+    data_supervised = series_to_supervised(data_values, n_in=n_in, n_out=n_out)
+    print('SUPERVISED------------------\n', data_supervised.head())
+    # dropped the columns so that the var at t left only the one we wan to forecast
+    data_supervised.drop(['var2(t)', 'var3(t)'], inplace=True, axis=1)
+    samples_size = data_supervised.shape[0]
+    print('SUPERVISED DROPPED-----------Size={}\n{}'.format(samples_size, data_supervised.head()))
+
+    # -----------[SPLIT INTO TRAINING & TESTING SET]-----------
+    train_size = round(samples_size * train_split)
+    # get an matrix copy of all values from the df
+    data_supervised_values = data_supervised.values
+    # slicing
+    data_train = data_supervised_values[:train_size, :]
+    data_test = data_supervised_values[train_size:, :]
+    print('TRAIN_SIZE={}-----TEST_SIZE={}-----'.format(data_train.shape, data_test.shape))
+    return data_train, data_test
+
+
+prepare_data(n_in=2, n_out=1)
+
+
+# ------------------[DATA PROCESSING PART 2]----------------------
+# # HERE WE AIM TO NORMALIZE ALL VALUES TO WITHIN 0-1 WITH DTYPE OF FLOAT32
+# # get a copy of only the values into a matrix
+# data_values = dataset.values  # Total = 5 * 365 * 24 = 43800 (8760/year)
+# print('FEATURES:\n', dataset.columns.values)
+# print('ONE ROW DATA:\n', data_values[0])
+# # encode the wind dir(at column 5) into integers categories, e.g. SE->1, E->2 ...
+# encoder = LabelEncoder()
+# data_values[:, 4] = encoder.fit_transform(data_values[:, 4])
+# # copy the array and cast to a 'float32'
+# data_values = data_values.astype(dtype='float32')
+# # normalize each features values (which are values within columns) in matrix to range of 0-1
+# scaler = MinMaxScaler(feature_range=(0, 1))
+# scaled_data_values = scaler.fit_transform(data_values)
+# print(scaled_data_values[0])
+# transform_rows = data_values.shape[1]
+#
+# # ------------------[PREPARE FOR SUPERVISED TRAINING SET]----------------------
+# # create supervised training data in df
+# reframed_df = series_to_supervised(scaled_data_values, n_in=3, n_out=1)
+# print(reframed_df.head())
+# print(reframed_df.shape)
+
+
+
+
 
 # drop first 99 rows so that it is 43700 samples for batch size to be 100
-reframed_df = reframed_df[:-99]
-print(reframed_df.shape)
+# reframed_df = reframed_df[:-99]
+# print(reframed_df.shape)
 
 # columns index in df to be dropped (0-7=input, 8=label)
-drop_col = [4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15]
-# drop column we dont want to predict
-reframed_df_less = reframed_df.drop(reframed_df.columns[drop_col],  # this return index of column
-                                    axis=1)
-# split data pair into x and y
-all_x = reframed_df_less.values[:, :-1]
-all_y = reframed_df_less.values[:, -1]
+# drop_col = [4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15]
+# # drop column we dont want to predict
+# reframed_df_less = reframed_df.drop(reframed_df.columns[drop_col],  # this return index of column
+#                                     axis=1)
+# # split data pair into x and y
+# all_x = reframed_df_less.values[:, :-1]
+# all_y = reframed_df_less.values[:, -1]
 # print(all_x.shape)
 # print(all_y.shape)
 # reshape fr 2s to 3d (samples, time step, features)
-all_x_3d = all_x.reshape((all_x.shape[0], 1, all_x.shape[1]))
+# all_x_3d = all_x.reshape((all_x.shape[0], 1, all_x.shape[1]))
 
 # ------------------[TRAINING AND VALIDATION]----------------------
-nb_epoch = 50
-batch_size = 50
-history = []
-
-model = Sequential()
-model.add(LSTM(32,
-               batch_input_shape=(batch_size, all_x_3d.shape[1], all_x_3d.shape[2]),
-               return_sequences=True,
-               stateful=True))  # input_shape = (time step, feature)
-model.add(LSTM(32,
-               return_sequences=True,
-               stateful=True))
-model.add(LSTM(32,
-               stateful=True))
-model.add(Dense(1))
-model.compile(loss='mean_absolute_error',
-              optimizer='adam')
-for i in range(nb_epoch):
-    model.fit(x=all_x_3d,
-              y=all_y,
-              epochs=100,
-              batch_size=batch_size,  # no of samples per gradient update
-              validation_split=0.5,
-              verbose=2,
-              shuffle=False)
-    model.reset_states()
+# nb_epoch = 50
+# batch_size = 50
+# history = []
+#
+# model = Sequential()
+# model.add(LSTM(32,
+#                batch_input_shape=(batch_size, all_x_3d.shape[1], all_x_3d.shape[2]),
+#                return_sequences=True,
+#                stateful=True))  # input_shape = (time step, feature)
+# model.add(LSTM(32,
+#                return_sequences=True,
+#                stateful=True))
+# model.add(LSTM(32,
+#                stateful=True))
+# model.add(Dense(1))
+# model.compile(loss='mean_absolute_error',
+#               optimizer='adam')
+# for i in range(nb_epoch):
+#     model.fit(x=all_x_3d,
+#               y=all_y,
+#               epochs=100,
+#               batch_size=batch_size,  # no of samples per gradient update
+#               validation_split=0.5,
+#               verbose=2,
+#               shuffle=False)
+#     model.reset_states()
 # # model.reset_states()
 # # Plotting of loss over epoch
 # plt.plot(history.history['loss'], label='train_loss')
