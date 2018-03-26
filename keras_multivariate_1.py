@@ -143,59 +143,22 @@ def prepare_data(n_in=1, n_out=1, train_split=0.6):
     # get an matrix copy of all values from the df
     data_supervised_values = data_supervised.values
     # slicing
-    data_train = data_supervised_values[:train_size, :]
-    data_test = data_supervised_values[train_size:, :]
-    print('TRAIN_SIZE={}-----TEST_SIZE={}-----'.format(data_train.shape, data_test.shape))
-    return data_train, data_test
+    data_train_X = data_supervised_values[:train_size, :-1]
+    data_train_y = data_supervised_values[:train_size, -1]
+    data_test_X = data_supervised_values[train_size:, :-1]
+    data_test_y = data_supervised_values[train_size:, -1]
+    print('---------[READY]------------')
+    print('TRAIN_X = {}\nTRAIN_y = {}'.format(data_train_X.shape, data_train_y.shape))
+    print('TEST_X  = {}\nTEST_y  = {}'.format(data_test_X.shape, data_test_y.shape))
+    return data_train_X, data_train_y, data_test_X, data_test_y
 
 
-prepare_data(n_in=2, n_out=1)
-
-
-# ------------------[DATA PROCESSING PART 2]----------------------
-# # HERE WE AIM TO NORMALIZE ALL VALUES TO WITHIN 0-1 WITH DTYPE OF FLOAT32
-# # get a copy of only the values into a matrix
-# data_values = dataset.values  # Total = 5 * 365 * 24 = 43800 (8760/year)
-# print('FEATURES:\n', dataset.columns.values)
-# print('ONE ROW DATA:\n', data_values[0])
-# # encode the wind dir(at column 5) into integers categories, e.g. SE->1, E->2 ...
-# encoder = LabelEncoder()
-# data_values[:, 4] = encoder.fit_transform(data_values[:, 4])
-# # copy the array and cast to a 'float32'
-# data_values = data_values.astype(dtype='float32')
-# # normalize each features values (which are values within columns) in matrix to range of 0-1
-# scaler = MinMaxScaler(feature_range=(0, 1))
-# scaled_data_values = scaler.fit_transform(data_values)
-# print(scaled_data_values[0])
-# transform_rows = data_values.shape[1]
-#
-# # ------------------[PREPARE FOR SUPERVISED TRAINING SET]----------------------
-# # create supervised training data in df
-# reframed_df = series_to_supervised(scaled_data_values, n_in=3, n_out=1)
-# print(reframed_df.head())
-# print(reframed_df.shape)
-
-
-
-
-
-# drop first 99 rows so that it is 43700 samples for batch size to be 100
-# reframed_df = reframed_df[:-99]
-# print(reframed_df.shape)
-
-# columns index in df to be dropped (0-7=input, 8=label)
-# drop_col = [4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15]
-# # drop column we dont want to predict
-# reframed_df_less = reframed_df.drop(reframed_df.columns[drop_col],  # this return index of column
-#                                     axis=1)
-# # split data pair into x and y
-# all_x = reframed_df_less.values[:, :-1]
-# all_y = reframed_df_less.values[:, -1]
-# print(all_x.shape)
-# print(all_y.shape)
-# reshape fr 2s to 3d (samples, time step, features)
-# all_x_3d = all_x.reshape((all_x.shape[0], 1, all_x.shape[1]))
-
+time_step = 2
+train_X, train_y, test_X, test_y = prepare_data(n_in=time_step, n_out=1, train_split=0.6)
+train_X = np.reshape(train_X, (train_X.shape[0], time_step, train_X.shape[1]))
+test_X = np.reshape(test_X, (test_X.shape[0], time_step, test_X.shape[1]))
+print(train_X.shape)
+print(test_X.shape)
 # ------------------[TRAINING AND VALIDATION]----------------------
 # nb_epoch = 50
 # batch_size = 50

@@ -7,6 +7,18 @@ from keras.optimizers import SGD
 from functools import reduce
 from sklearn.preprocessing import StandardScaler, LabelEncoder, MinMaxScaler
 from keras.preprocessing.sequence import pad_sequences
+from pandas import DataFrame
+
+df = DataFrame([[1, 2, 3, 4, 5, 6], [11, 22, 33, 44, 55, 66]], columns=['A2', 'B2', 'A1', 'B1', 'A', 'B'])
+print(df)
+df2 = df.values
+
+df3 = np.reshape(df2, (2, 2, 3))
+print(df3)
+
+
+
+
 
 
 # this returns a list of factors of n
