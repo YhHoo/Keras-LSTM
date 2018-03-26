@@ -9,16 +9,18 @@ from sklearn.preprocessing import StandardScaler, LabelEncoder, MinMaxScaler
 from keras.preprocessing.sequence import pad_sequences
 from pandas import DataFrame
 
-df = DataFrame([[1, 2, 3, 4, 5, 6], [11, 22, 33, 44, 55, 66]], columns=['A2', 'B2', 'A1', 'B1', 'A', 'B'])
+df = DataFrame([[1, 2, 3, 4], [11, 22, 33, 44]], columns=['A2', 'B2', 'A1', 'B1'])
 print(df)
 df2 = df.values
 
-df3 = np.reshape(df2, (2, 2, 3))
+# it means, a list first hav 2 big items, each of the 2 hav 3 other items inside,
+# then each of the 3 items has 4 another items inside
+zero = np.zeros((2, 3, 4))
+print(zero)
+
+
+df3 = np.reshape(df2, (2, 2, 2))
 print(df3)
-
-
-
-
 
 
 # this returns a list of factors of n
