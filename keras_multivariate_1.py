@@ -12,6 +12,7 @@ from functools import reduce
 from sklearn.metrics import mean_squared_error
 from keras.models import Sequential
 from keras.layers import Dense, LSTM, GRU, RNN
+from keras.models import model_from_json
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -192,55 +193,85 @@ print(train_X_3d.shape)
 print(test_X_3d.shape)
 
 # ------------------[TRAINING AND VALIDATION]----------------------
-# Available batch size = [1, 26278, 2, 13139, 7, 3754, 14, 1877]
-nb_epoch = 150
+# # Available batch size = [1, 26278, 2, 13139, 7, 3754, 14, 1877]
+# nb_epoch = 150
 batch_size = 500
-# history = []
+# # history = []
+# #
+# model = Sequential()
+# model.add(LSTM(64,
+#                batch_input_shape=(batch_size, train_X_3d.shape[1], train_X_3d.shape[2]),
+#                return_sequences=False,
+#                stateful=False,
+#                dropout=0.1))
+# # model.add(LSTM(32,
+# #                return_sequences=True,
+# #                stateful=False))
+# # model.add(LSTM(32,
+# #                stateful=False))
+# model.add(Dense(1))
+# model.compile(loss='mean_absolute_error',
+#               optimizer='adam')
+# print(model.summary())
+# # for i in range(nb_epoch):
+# history = model.fit(x=train_X_3d,
+#                     y=train_y,
+#                     validation_data=(test_X_3d, test_y),
+#                     epochs=50,
+#                     batch_size=batch_size,  # no of samples per gradient update
+#                     verbose=2,
+#                     shuffle=False)
+# # model.reset_states()
 #
-model = Sequential()
-model.add(LSTM(64,
-               batch_input_shape=(batch_size, train_X_3d.shape[1], train_X_3d.shape[2]),
-               return_sequences=False,
-               stateful=False,
-               dropout=0.1))
-# model.add(LSTM(32,
-#                return_sequences=True,
-#                stateful=False))
-# model.add(LSTM(32,
-#                stateful=False))
-model.add(Dense(1))
-model.compile(loss='mean_absolute_error',
-              optimizer='adam')
-print(model.summary())
-# for i in range(nb_epoch):
-history = model.fit(x=train_X_3d,
-                    y=train_y,
-                    validation_data=(test_X_3d, test_y),
-                    epochs=50,
-                    batch_size=batch_size,  # no of samples per gradient update
-                    verbose=2,
-                    shuffle=False)
-# model.reset_states()
-
-# ----[Saving Model]----
-# serialize and saving the model structure to JSON
-model_name = 'air_quality_model'
-model_json = model.to_json()
-with open(model_name + '.json', 'w') as json_file:
-    json_file.write(model_json)
-# serialize and save the model weights to HDF5
-model.save_weights(model_name + '.h5')
-print('Model saved !')
-
-# ----[VISUALIZE]-----
-# Plotting of loss over epoch
-plt.plot(history.history['loss'], label='train_loss')
-plt.plot(history.history['val_loss'], label='test_loss')
-plt.legend()
-plt.show()
+# # ----[Saving Model]----
+# # serialize and saving the model structure to JSON
+# model_name = 'air_quality_model'
+# model_json = model.to_json()
+# with open(model_name + '.json', 'w') as json_file:
+#     json_file.write(model_json)
+# # serialize and save the model weights to HDF5
+# model.save_weights(model_name + '.h5')
+# print('Model saved !')
+#
+# # ----[VISUALIZE]-----
+# # Plotting of loss over epoch
+# plt.plot(history.history['loss'], label='train_loss')
+# plt.plot(history.history['val_loss'], label='test_loss')
+# plt.legend()
+# plt.show()
 
 
 # ------------------[RMSE EVALUATION]----------------------
+# ----[Loading Model]----
+# load json and create model
+json_file = open('air_quality_model.json', 'r')
+loaded_json_model = json_file.read()
+json_file.close()
+model = model_from_json(loaded_json_model)
+# load weights into new model, according to doc, weight has to be loaded fr .h5 only
+# bcaz json store only the structure of model, h5 store the weights
+model.load_weights('air_quality_model.h5')
+model.compile(loss='mean_absolute_error',
+              optimizer='adam')
+print('Model Loaded !')
+model.evaluate(x=test_X_3d, y=test_y, batch_size=batch_size)
+prediction = model.predict(test_X_3d, batch_size=batch_size)
+print(prediction[:5])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # one_year_hour = 365*24
 # x = all_x[one_year_hour:, :]
 # x = np.reshape(x, (x.shape[0], 1, x.shape[1]))
