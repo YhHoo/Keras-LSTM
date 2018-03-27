@@ -116,6 +116,16 @@ def difference(datalist, interval=1):
     return diff
 
 
+def inv_difference(head, diff_list):
+    inv_list = []
+    accu = head
+    inv_list.append(accu)
+    for i in range(len(diff_list)):
+        accu += diff_list[i]
+        inv_list.append(accu)
+    return inv_list
+
+
 # this converts the data in 'air_quality_dataset_processed.csv' into data ready for
 # supervised training. The PRINT line is to let us have a look on how the data are being
 # processed and what it ends up as.
@@ -206,11 +216,23 @@ print(model.summary())
 history = model.fit(x=train_X_3d,
                     y=train_y,
                     validation_data=(test_X_3d, test_y),
-                    epochs=100,
+                    epochs=50,
                     batch_size=batch_size,  # no of samples per gradient update
                     verbose=2,
                     shuffle=False)
 # model.reset_states()
+
+# ----[Saving Model]----
+# serialize and saving the model structure to JSON
+model_name = 'air_quality_model'
+model_json = model.to_json()
+with open(model_name + '.json', 'w') as json_file:
+    json_file.write(model_json)
+# serialize and save the model weights to HDF5
+model.save_weights(model_name + '.h5')
+print('Model saved !')
+
+# ----[VISUALIZE]-----
 # Plotting of loss over epoch
 plt.plot(history.history['loss'], label='train_loss')
 plt.plot(history.history['val_loss'], label='test_loss')
