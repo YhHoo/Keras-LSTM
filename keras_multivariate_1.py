@@ -114,6 +114,8 @@ def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
 # processed and what it ends up as.
 def prepare_data(n_in=1, n_out=1, train_split=0.6):
     data = read_csv('air_quality_dataset_processed.csv', index_col=0)
+    # so that when time step is 3, the sample size is 40000, and the batch size cn be set easily
+    data = data[:40003]
     # encode dir into integers, e.g. E->1, SE->2 ...
     encoder = LabelEncoder()
     data.iloc[:, 4] = encoder.fit_transform(data['wnd_dir'][:])
@@ -153,45 +155,47 @@ def prepare_data(n_in=1, n_out=1, train_split=0.6):
     return data_train_X, data_train_y, data_test_X, data_test_y
 
 
-time_step = 2
-train_X, train_y, test_X, test_y = prepare_data(n_in=time_step, n_out=1, train_split=0.6)
-train_X = np.reshape(train_X, (train_X.shape[0], time_step, train_X.shape[1]))
-test_X = np.reshape(test_X, (test_X.shape[0], time_step, test_X.shape[1]))
-print(train_X.shape)
-print(test_X.shape)
+time_step = 3
+train_X, train_y, test_X, test_y = prepare_data(n_in=time_step, n_out=1, train_split=0.7)
+train_X_3d = np.reshape(train_X, (train_X.shape[0], time_step, int(train_X.shape[1] / time_step)))
+test_X_3d = np.reshape(test_X, (test_X.shape[0], time_step, int(test_X.shape[1] / time_step)))
+print(train_X_3d.shape)
+print(test_X_3d.shape)
+
 # ------------------[TRAINING AND VALIDATION]----------------------
-# nb_epoch = 50
-# batch_size = 50
+# Available batch size = [1, 26278, 2, 13139, 7, 3754, 14, 1877]
+# nb_epoch = 3754
+batch_size = 500
 # history = []
 #
-# model = Sequential()
-# model.add(LSTM(32,
-#                batch_input_shape=(batch_size, all_x_3d.shape[1], all_x_3d.shape[2]),
-#                return_sequences=True,
-#                stateful=True))  # input_shape = (time step, feature)
+model = Sequential()
+model.add(LSTM(32,
+               batch_input_shape=(batch_size, train_X_3d.shape[1], train_X_3d.shape[2]),
+               return_sequences=False,
+               stateful=False))
 # model.add(LSTM(32,
 #                return_sequences=True,
 #                stateful=True))
 # model.add(LSTM(32,
 #                stateful=True))
-# model.add(Dense(1))
-# model.compile(loss='mean_absolute_error',
-#               optimizer='adam')
+model.add(Dense(1))
+model.compile(loss='mean_absolute_error',
+              optimizer='adam')
 # for i in range(nb_epoch):
-#     model.fit(x=all_x_3d,
-#               y=all_y,
-#               epochs=100,
-#               batch_size=batch_size,  # no of samples per gradient update
-#               validation_split=0.5,
-#               verbose=2,
-#               shuffle=False)
+history = model.fit(x=train_X_3d,
+                    y=train_y,
+                    validation_data=(test_X_3d, test_y),
+                    epochs=250,
+                    batch_size=batch_size,  # no of samples per gradient update
+                    verbose=2,
+                    shuffle=False)
 #     model.reset_states()
 # # model.reset_states()
-# # Plotting of loss over epoch
-# plt.plot(history.history['loss'], label='train_loss')
-# plt.plot(history.history['val_loss'], label='test_loss')
-# plt.legend()
-# plt.show()
+# Plotting of loss over epoch
+plt.plot(history.history['loss'], label='train_loss')
+plt.plot(history.history['val_loss'], label='test_loss')
+plt.legend()
+plt.show()
 
 
 # ------------------[RMSE EVALUATION]----------------------
