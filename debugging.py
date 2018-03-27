@@ -23,14 +23,44 @@ from pandas import DataFrame
 # print(df3)
 
 
+def difference(datalist, interval=1):
+    diff = []
+    for i in range(interval, len(datalist)):
+        diff.append(datalist[i] - datalist[i - interval])
+    return diff
+
+
+def inv_difference(head, diff_list):
+    inv_list = []
+    accu = head
+    inv_list.append(accu)
+    for i in range(len(diff_list)):
+        accu += diff_list[i]
+        inv_list.append(accu)
+    return inv_list
+
+
+test = np.array([[1, 2, 3],
+                 [11, 23, 34],
+                 [23, 35, 46],
+                 [33, 44, 55]])
+diff_list = []
+for i in range(test.shape[1]):
+    diff_list.append(difference(test[:, i]))
+diff_list = np.asarray(diff_list)
+diff_list = diff_list.T
+print(diff_list)
+
+normal = inv_difference(head=1, diff_list=diff_list[:, 0])
+print(normal)
+
+
+
+
 # this returns a list of factors of n
 def factors(n):
     factor_list = reduce(list.__add__, ([i, n//i] for i in range(1, int(pow(n, 0.5) + 1)) if n % i == 0))
     return factor_list
-
-
-print(factors(21898))
-# print(factors(13139))
 
 
 def fill_up_cavity():

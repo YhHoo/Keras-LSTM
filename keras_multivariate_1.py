@@ -109,13 +109,21 @@ def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
     return agg
 
 
+def difference(datalist, interval=1):
+    diff = []
+    for i in range(interval, len(datalist)):
+        diff.append(datalist[i] - datalist[i - interval])
+    return diff
+
+
 # this converts the data in 'air_quality_dataset_processed.csv' into data ready for
 # supervised training. The PRINT line is to let us have a look on how the data are being
 # processed and what it ends up as.
+# REMINDER: change those with # ***
 def prepare_data(n_in=1, n_out=1, train_split=0.6):
     data = read_csv('air_quality_dataset_processed.csv', index_col=0)
-    # so that when time step is 3, the sample size is 40000, and the batch size cn be set easily
-    data = data[:40003]
+    # This slice the sample size to divisible by 100
+    data = data[:40004]
     # encode dir into integers, e.g. E->1, SE->2 ...
     encoder = LabelEncoder()
     data.iloc[:, 4] = encoder.fit_transform(data['wnd_dir'][:])
@@ -125,12 +133,22 @@ def prepare_data(n_in=1, n_out=1, train_split=0.6):
     data.drop(features_to_drop, inplace=True, axis=1)
     # get a matrix copy of all values in the df and convert them to float for scaling
     data_values = data.values.astype(dtype='float32')
+    print('ORIGINAL----------------\n', data.head())
+
+    # -----------[STATIONARY by DIFFERENCING]-----------
+    diff_list = []
+    # for every feature column
+    for i in range(data_values.shape[1]):
+        diff_list.append(difference(data_values[:, i], interval=1))
+    # convert back to correct position in matrix
+    diff_list = np.asarray(diff_list)
+    diff_list = diff_list.T
+    print('DIFFERENCE--------------\n', diff_list[:5])
 
     # -----------[SCALING]-----------
     scaler = MinMaxScaler(feature_range=(0, 1))
-    data_values = scaler.fit_transform(data_values)
-    print('B4 PROCESSED----------------\n', data.head())
-    print('AFTER PROCESSED-------------\n', data_values[:5])
+    data_values = scaler.fit_transform(diff_list)
+    print('SCALED------------------\n', data_values[:5])
 
     # -----------[PREPARE FOR SUPERVISED TRAINING]-----------
     data_supervised = series_to_supervised(data_values, n_in=n_in, n_out=n_out)
@@ -138,7 +156,8 @@ def prepare_data(n_in=1, n_out=1, train_split=0.6):
     # dropped the columns so that the var at t left only the one we wan to forecast
     data_supervised.drop(['var2(t)', 'var3(t)'], inplace=True, axis=1)
     samples_size = data_supervised.shape[0]
-    print('SUPERVISED DROPPED-----------Size={}\n{}'.format(samples_size, data_supervised.head()))
+    print('SUPERVISED DROPPED-----------Final_Size={}(Divisible by 100 !)\n{}'.format(samples_size,
+                                                                                      data_supervised.head()))
 
     # -----------[SPLIT INTO TRAINING & TESTING SET]-----------
     train_size = round(samples_size * train_split)
@@ -164,33 +183,34 @@ print(test_X_3d.shape)
 
 # ------------------[TRAINING AND VALIDATION]----------------------
 # Available batch size = [1, 26278, 2, 13139, 7, 3754, 14, 1877]
-# nb_epoch = 3754
+nb_epoch = 150
 batch_size = 500
 # history = []
 #
 model = Sequential()
-model.add(LSTM(32,
+model.add(LSTM(64,
                batch_input_shape=(batch_size, train_X_3d.shape[1], train_X_3d.shape[2]),
                return_sequences=False,
-               stateful=False))
+               stateful=False,
+               dropout=0.1))
 # model.add(LSTM(32,
 #                return_sequences=True,
-#                stateful=True))
+#                stateful=False))
 # model.add(LSTM(32,
-#                stateful=True))
+#                stateful=False))
 model.add(Dense(1))
 model.compile(loss='mean_absolute_error',
               optimizer='adam')
+print(model.summary())
 # for i in range(nb_epoch):
 history = model.fit(x=train_X_3d,
                     y=train_y,
                     validation_data=(test_X_3d, test_y),
-                    epochs=250,
+                    epochs=100,
                     batch_size=batch_size,  # no of samples per gradient update
                     verbose=2,
                     shuffle=False)
-#     model.reset_states()
-# # model.reset_states()
+# model.reset_states()
 # Plotting of loss over epoch
 plt.plot(history.history['loss'], label='train_loss')
 plt.plot(history.history['val_loss'], label='test_loss')
