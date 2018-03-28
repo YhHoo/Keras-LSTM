@@ -39,20 +39,29 @@ def inv_difference(head, diff_list):
         inv_list.append(accu)
     return inv_list
 
+#
+# test = np.array([[1, 2, 3],
+#                  [11, 23, 34],
+#                  [23, 35, 46],
+#                  [33, 44, 55]])
+# diff_list = []
+# for i in range(test.shape[1]):
+#     diff_list.append(difference(test[:, i]))
+# diff_list = np.asarray(diff_list)
+# diff_list = diff_list.T
+# print(diff_list)
+#
+# normal = inv_difference(head=1, diff_list=diff_list[:, 0])
+# print(normal)
 
-test = np.array([[1, 2, 3],
-                 [11, 23, 34],
-                 [23, 35, 46],
-                 [33, 44, 55]])
-diff_list = []
-for i in range(test.shape[1]):
-    diff_list.append(difference(test[:, i]))
-diff_list = np.asarray(diff_list)
-diff_list = diff_list.T
-print(diff_list)
 
-normal = inv_difference(head=1, diff_list=diff_list[:, 0])
-print(normal)
+# l = np.array([[1, 2, 3, 4]]).reshape((4, 1))
+# print(l.shape[0])
+# z = np.zeros((4, 2))
+# print(z)
+# z = np.concatenate((l, z), axis=1)
+# # # print(l.shape)
+# print(z)
 
 
 # this returns a list of factors of n
@@ -82,7 +91,11 @@ def max_min_scale():
                       [5, 5, 5, 5, -500]])
     dummy2 = scaler.fit_transform(dummy)
     print(dummy2)
+    dummy2 = scaler.inverse_transform(dummy2)
+    print(dummy2)
 
+
+max_min_scale()
 
 def test_standard_scaler():
     data = np.array([1, 2, 3, 4, 5]).reshape((5, 1))

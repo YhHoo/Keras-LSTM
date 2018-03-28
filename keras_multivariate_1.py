@@ -122,7 +122,8 @@ def inv_difference(head, diff_list):
     accu = head
     inv_list.append(accu)
     for i in range(len(diff_list)):
-        accu += diff_list[i]
+        # round off float diff to 4.d.p only
+        accu += round(diff_list[i], 4)
         inv_list.append(accu)
     return inv_list
 
@@ -182,11 +183,11 @@ def prepare_data(n_in=1, n_out=1, train_split=0.6):
     print('---------[READY]------------')
     print('TRAIN_X = {}\nTRAIN_y = {}'.format(data_train_X.shape, data_train_y.shape))
     print('TEST_X  = {}\nTEST_y  = {}'.format(data_test_X.shape, data_test_y.shape))
-    return data_train_X, data_train_y, data_test_X, data_test_y
+    return data_train_X, data_train_y, data_test_X, data_test_y, scaler, data.values
 
 
 time_step = 3
-train_X, train_y, test_X, test_y = prepare_data(n_in=time_step, n_out=1, train_split=0.7)
+train_X, train_y, test_X, test_y, scaler, data_values_all = prepare_data(n_in=time_step, n_out=1, train_split=0.7)
 train_X_3d = np.reshape(train_X, (train_X.shape[0], time_step, int(train_X.shape[1] / time_step)))
 test_X_3d = np.reshape(test_X, (test_X.shape[0], time_step, int(test_X.shape[1] / time_step)))
 print(train_X_3d.shape)
@@ -254,23 +255,40 @@ model.load_weights('air_quality_model.h5')
 model.compile(loss='mean_absolute_error',
               optimizer='adam')
 print('Model Loaded !')
-model.evaluate(x=test_X_3d, y=test_y, batch_size=batch_size)
-prediction = model.predict(test_X_3d, batch_size=batch_size)
-print(prediction[:5])
 
+# ----[Prepare Prediction]----
+# inverse transform the prediction back to original values
+prediction = model.predict(test_X_3d, batch_size=batch_size)  
+# prepare zeros matrix so concat with prediction for inverse scaler
+zero = np.zeros((prediction.shape[0], 2))
+# jz to fill up the empty columns
+prediction = np.concatenate((prediction, zero), axis=1)
+# inverse MaxMinScale, make sure features are aligned as tat during fit_transform()
+prediction = scaler.inverse_transform(prediction)
+# take only first column since the rest are just dummy
+prediction = prediction[:, 0]  # stationary
+plt.plot(prediction)
+plt.show()
+# find the head index, refer evernote for more explanation on below:
+head_index = train_X.shape[0] + time_step
 
+# inverse difference
+prediction = inv_difference(head=data_values_all[head_index, 0], diff_list=prediction)
+print('PREDICTION------------------\n', prediction[:5])
+print(len(prediction))
 
+# ----[Prepare Actual]----
+actual = data_values_all[head_index:, 0]
+print(len(actual))
 
-
-
-
-
-
-
-
-
-
-
+# ----[RMSE]----
+rmse = sqrt(mean_squared_error(actual, prediction))
+print('RMSE = ', rmse)
+# plt.plot(actual[:72], label='actual')
+# plt.plot(prediction[:72], label='prediction')
+# plt.title('2 DAYS PREDICTION (48 points)')
+# plt.legend()
+# plt.show()
 
 # one_year_hour = 365*24
 # x = all_x[one_year_hour:, :]
