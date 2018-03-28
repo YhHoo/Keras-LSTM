@@ -190,18 +190,18 @@ time_step = 3
 train_X, train_y, test_X, test_y, scaler, data_values_all = prepare_data(n_in=time_step, n_out=1, train_split=0.7)
 train_X_3d = np.reshape(train_X, (train_X.shape[0], time_step, int(train_X.shape[1] / time_step)))
 test_X_3d = np.reshape(test_X, (test_X.shape[0], time_step, int(test_X.shape[1] / time_step)))
-print(train_X_3d.shape)
-print(test_X_3d.shape)
+print('TRAIN_X_3D = ', train_X_3d.shape)
+print('TEST_X_3D = ', test_X_3d.shape)
 
 # ------------------[TRAINING AND VALIDATION]----------------------
 # # Available batch size = [1, 26278, 2, 13139, 7, 3754, 14, 1877]
 # nb_epoch = 150
-batch_size = 500
+# batch_size = 100
 # # history = []
 # #
 # model = Sequential()
 # model.add(LSTM(64,
-#                batch_input_shape=(batch_size, train_X_3d.shape[1], train_X_3d.shape[2]),
+#                input_shape=(train_X_3d.shape[1], train_X_3d.shape[2]),
 #                return_sequences=False,
 #                stateful=False,
 #                dropout=0.1))
@@ -258,7 +258,7 @@ print('Model Loaded !')
 
 # ----[Prepare Prediction]----
 # inverse transform the prediction back to original values
-prediction = model.predict(test_X_3d, batch_size=batch_size)  
+prediction = model.predict(test_X_3d)
 # prepare zeros matrix so concat with prediction for inverse scaler
 zero = np.zeros((prediction.shape[0], 2))
 # jz to fill up the empty columns
@@ -284,36 +284,12 @@ print(len(actual))
 # ----[RMSE]----
 rmse = sqrt(mean_squared_error(actual, prediction))
 print('RMSE = ', rmse)
-# plt.plot(actual[:72], label='actual')
-# plt.plot(prediction[:72], label='prediction')
-# plt.title('2 DAYS PREDICTION (48 points)')
-# plt.legend()
-# plt.show()
 
-# one_year_hour = 365*24
-# x = all_x[one_year_hour:, :]
-# x = np.reshape(x, (x.shape[0], 1, x.shape[1]))
-# prediction = model.predict(x)
-# # Prepare a matrix that has same no of columns as the matrix during scaler.fit_transform
-# prediction = np.concatenate((prediction, all_x[one_year_hour:, 1:]), axis=1)
-# zeros = np.zeros((prediction.shape[0], (transform_rows-prediction.shape[1])))
-# prediction = np.concatenate((prediction, zeros), axis=1)
-# prediction = scaler.inverse_transform(prediction)
-# prediction = prediction[:, 0]  # PREDICTION done
-# prediction = prediction.reshape((prediction.shape[0], 1))
-#
-# # prepare for actual
-# actual = all_y[one_year_hour:]
-# actual = actual.reshape((actual.shape[0], 1))
-# zeros = np.zeros((actual.shape[0], (transform_rows-actual.shape[1])))
-# actual = np.concatenate((actual, zeros), axis=1)
-# actual = scaler.inverse_transform(actual)
-# actual = actual[:, 0]
-# actual = actual.reshape((actual.shape[0], 1))
 
-# calculate rmse (since we are calc rmse, we hv to make sure our loss is mean absolute error
-# instead of mean square error, otherwise the training optimizes the mse, and rmse will be bigger
-# in the end)
-# rmse = sqrt(mean_squared_error(actual, prediction))
-# print('RMSE = ', rmse)
+plt.plot(actual[:72], label='actual')
+plt.plot(prediction[:72], label='prediction')
+plt.title('2 DAYS PREDICTION (48 points)')
+plt.legend()
+plt.show()
+
 
