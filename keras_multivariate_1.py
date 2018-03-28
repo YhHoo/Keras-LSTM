@@ -123,7 +123,7 @@ def inv_difference(head, diff_list):
     inv_list.append(accu)
     for i in range(len(diff_list)):
         # round off float diff to 4.d.p only
-        accu += round(diff_list[i], 4)
+        accu += diff_list[i]
         inv_list.append(accu)
     return inv_list
 
@@ -135,13 +135,13 @@ def inv_difference(head, diff_list):
 def prepare_data(n_in=1, n_out=1, train_split=0.6):
     data = read_csv('air_quality_dataset_processed.csv', index_col=0)
     # This slice the sample size to divisible by 100
-    data = data[:40004]
+    data = data[:40003]
     # encode dir into integers, e.g. E->1, SE->2 ...
     encoder = LabelEncoder()
     data.iloc[:, 4] = encoder.fit_transform(data['wnd_dir'][:])
     # All FEATURE = [pollution | dew  | temp |  press | wnd_dir | wnd_spd | snow | rain]
     # drop off unwanted columns features
-    features_to_drop = ['press', 'wnd_dir', 'wnd_spd', 'snow', 'rain']
+    features_to_drop = ['dew', 'temp', 'press', 'wnd_dir', 'wnd_spd', 'snow', 'rain']
     data.drop(features_to_drop, inplace=True, axis=1)
     # get a matrix copy of all values in the df and convert them to float for scaling
     data_values = data.values.astype(dtype='float32')
@@ -166,7 +166,7 @@ def prepare_data(n_in=1, n_out=1, train_split=0.6):
     data_supervised = series_to_supervised(data_values, n_in=n_in, n_out=n_out)
     print('SUPERVISED------------------\n', data_supervised.head())
     # dropped the columns so that the var at t left only the one we wan to forecast
-    data_supervised.drop(['var2(t)', 'var3(t)'], inplace=True, axis=1)
+    # data_supervised.drop(['var2(t)', 'var3(t)'], inplace=True, axis=1)
     samples_size = data_supervised.shape[0]
     print('SUPERVISED DROPPED-----------Final_Size={}(Divisible by 100 !)\n{}'.format(samples_size,
                                                                                       data_supervised.head()))
@@ -186,60 +186,62 @@ def prepare_data(n_in=1, n_out=1, train_split=0.6):
     return data_train_X, data_train_y, data_test_X, data_test_y, scaler, data.values
 
 
-time_step = 3
-train_X, train_y, test_X, test_y, scaler, data_values_all = prepare_data(n_in=time_step, n_out=1, train_split=0.7)
+time_step = 2
+train_X, train_y, test_X, test_y, scaler, data_values_all = prepare_data(n_in=time_step,
+                                                                         n_out=1,
+                                                                         train_split=0.7)
 train_X_3d = np.reshape(train_X, (train_X.shape[0], time_step, int(train_X.shape[1] / time_step)))
 test_X_3d = np.reshape(test_X, (test_X.shape[0], time_step, int(test_X.shape[1] / time_step)))
 print('TRAIN_X_3D = ', train_X_3d.shape)
 print('TEST_X_3D = ', test_X_3d.shape)
 
 # ------------------[TRAINING AND VALIDATION]----------------------
-# # Available batch size = [1, 26278, 2, 13139, 7, 3754, 14, 1877]
-# nb_epoch = 150
-# batch_size = 100
-# # history = []
-# #
-# model = Sequential()
-# model.add(LSTM(64,
-#                input_shape=(train_X_3d.shape[1], train_X_3d.shape[2]),
-#                return_sequences=False,
-#                stateful=False,
-#                dropout=0.1))
-# # model.add(LSTM(32,
-# #                return_sequences=True,
-# #                stateful=False))
-# # model.add(LSTM(32,
-# #                stateful=False))
-# model.add(Dense(1))
-# model.compile(loss='mean_absolute_error',
-#               optimizer='adam')
-# print(model.summary())
-# # for i in range(nb_epoch):
-# history = model.fit(x=train_X_3d,
-#                     y=train_y,
-#                     validation_data=(test_X_3d, test_y),
-#                     epochs=50,
-#                     batch_size=batch_size,  # no of samples per gradient update
-#                     verbose=2,
-#                     shuffle=False)
-# # model.reset_states()
+# Available batch size = [1, 26278, 2, 13139, 7, 3754, 14, 1877]
+nb_epoch = 150
+batch_size = 100
+# history = []
 #
-# # ----[Saving Model]----
-# # serialize and saving the model structure to JSON
-# model_name = 'air_quality_model'
-# model_json = model.to_json()
-# with open(model_name + '.json', 'w') as json_file:
-#     json_file.write(model_json)
-# # serialize and save the model weights to HDF5
-# model.save_weights(model_name + '.h5')
-# print('Model saved !')
-#
-# # ----[VISUALIZE]-----
-# # Plotting of loss over epoch
-# plt.plot(history.history['loss'], label='train_loss')
-# plt.plot(history.history['val_loss'], label='test_loss')
-# plt.legend()
-# plt.show()
+model = Sequential()
+model.add(LSTM(64,
+               input_shape=(train_X_3d.shape[1], train_X_3d.shape[2]),
+               return_sequences=False,
+               stateful=False,
+               dropout=0))
+# model.add(LSTM(32,
+#                return_sequences=True,
+#                stateful=False))
+# model.add(LSTM(32,
+#                stateful=False))
+model.add(Dense(1))
+model.compile(loss='mean_absolute_error',
+              optimizer='adam')
+print(model.summary())
+# for i in range(nb_epoch):
+history = model.fit(x=train_X_3d,
+                    y=train_y,
+                    validation_data=(test_X_3d, test_y),
+                    epochs=50,
+                    batch_size=batch_size,  # no of samples per gradient update
+                    verbose=2,
+                    shuffle=False)
+# model.reset_states()
+
+# ----[Saving Model]----
+# serialize and saving the model structure to JSON
+model_name = 'air_quality_model'
+model_json = model.to_json()
+with open(model_name + '.json', 'w') as json_file:
+    json_file.write(model_json)
+# serialize and save the model weights to HDF5
+model.save_weights(model_name + '.h5')
+print('Model saved !')
+
+# ----[VISUALIZE]-----
+# Plotting of loss over epoch
+plt.plot(history.history['loss'], label='train_loss')
+plt.plot(history.history['val_loss'], label='test_loss')
+plt.legend()
+plt.show()
 
 
 # ------------------[RMSE EVALUATION]----------------------
@@ -258,23 +260,23 @@ print('Model Loaded !')
 
 # ----[Prepare Prediction]----
 # inverse transform the prediction back to original values
-prediction = model.predict(test_X_3d)
-# prepare zeros matrix so concat with prediction for inverse scaler
-zero = np.zeros((prediction.shape[0], 2))
-# jz to fill up the empty columns
-prediction = np.concatenate((prediction, zero), axis=1)
+prediction = model.predict(test_X_3d, batch_size=batch_size)
+# # prepare zeros matrix so concat with prediction for inverse scaler
+# zero = np.zeros((prediction.shape[0], 2))
+# # jz to fill up the empty columns
+# prediction = np.concatenate((prediction, zero), axis=1)
 # inverse MaxMinScale, make sure features are aligned as tat during fit_transform()
 prediction = scaler.inverse_transform(prediction)
-# take only first column since the rest are just dummy
-prediction = prediction[:, 0]  # stationary
+# # take only first column since the rest are just dummy
+# prediction = prediction[:, 0]  # stationary
 plt.plot(prediction)
+plt.title('PREDICTION IN DIFFERENCE VALUE')
 plt.show()
 # find the head index, refer evernote for more explanation on below:
 head_index = train_X.shape[0] + time_step
-
 # inverse difference
-prediction = inv_difference(head=data_values_all[head_index, 0], diff_list=prediction)
-print('PREDICTION------------------\n', prediction[:5])
+prediction = inv_difference(head=data_values_all[head_index, 0], diff_list=prediction[:, 0])
+print('INV_DIFFERENCE------------------\n', prediction[:5])
 print(len(prediction))
 
 # ----[Prepare Actual]----
@@ -286,8 +288,8 @@ rmse = sqrt(mean_squared_error(actual, prediction))
 print('RMSE = ', rmse)
 
 
-plt.plot(actual[:72], label='actual')
-plt.plot(prediction[:72], label='prediction')
+plt.plot(actual[:72], label='actual', marker='x')
+plt.plot(prediction[:72], label='prediction', marker='o')
 plt.title('2 DAYS PREDICTION (48 points)')
 plt.legend()
 plt.show()
