@@ -148,7 +148,6 @@ def inverse_difference(diff_list, datalist):
     return inv_list
 
 
-
 # sine_wave = [sin(radians(x)) for x in range(360)]
 # sine_wave = sine_wave * 2
 # plt.plot(sine_wave)

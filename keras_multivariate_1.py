@@ -188,7 +188,7 @@ def prepare_data(n_in=1, n_out=1, train_split=0.6):
     return data_train_X, data_train_y, data_test_X, data_test_y, scaler, data.values
 
 
-time_step = 3
+time_step = 1
 train_X, train_y, test_X, test_y, scaler, data_values_all = prepare_data(n_in=time_step,
                                                                          n_out=1,
                                                                          train_split=0.7)
@@ -200,50 +200,50 @@ print('TEST_X_3D = ', test_X_3d.shape)
 # ------------------[TRAINING AND VALIDATION]----------------------
 # Available batch size = [1, 26278, 2, 13139, 7, 3754, 14, 1877]
 batch_size = 100
-# # nb_epoch = 150
-# # history = []
-# #
-# model = Sequential()
-# model.add(LSTM(100,
-#                input_shape=(train_X_3d.shape[1], train_X_3d.shape[2]),
+# nb_epoch = 150
+# history = []
+#
+model = Sequential()
+model.add(LSTM(100,
+               input_shape=(train_X_3d.shape[1], train_X_3d.shape[2]),
+               return_sequences=False,
+               stateful=False,
+               dropout=0))
+# model.add(LSTM(32,
 #                return_sequences=False,
-#                stateful=False,
-#                dropout=0))
-# # model.add(LSTM(32,
-# #                return_sequences=False,
-# #                stateful=False))
-# # model.add(LSTM(32,
-# #                stateful=False))
-# model.add(Dense(1))
-# model.compile(loss='mean_absolute_error',
-#               optimizer='adam')
-# print(model.summary())
-# # for i in range(nb_epoch):
-# history = model.fit(x=train_X_3d,
-#                     y=train_y,
-#                     validation_data=(test_X_3d, test_y),
-#                     epochs=20,
-#                     batch_size=batch_size,  # no of samples per gradient update
-#                     verbose=2,
-#                     shuffle=False)
-# # model.reset_states()
-#
-# # ----[Saving Model]----
-# # serialize and saving the model structure to JSON
-# model_name = 'air_quality_model'
-# model_json = model.to_json()
-# with open(model_name + '.json', 'w') as json_file:
-#     json_file.write(model_json)
-# # serialize and save the model weights to HDF5
-# model.save_weights(model_name + '.h5')
-# print('Model saved !')
-#
-# # ----[VISUALIZE]-----
-# # Plotting of loss over epoch
-# plt.plot(history.history['loss'], label='train_loss')
-# plt.plot(history.history['val_loss'], label='test_loss')
-# plt.legend()
-# plt.show()
+#                stateful=False))
+# model.add(LSTM(32,
+#                stateful=False))
+model.add(Dense(1))
+model.compile(loss='mean_absolute_error',
+              optimizer='adam')
+print(model.summary())
+# for i in range(nb_epoch):
+history = model.fit(x=train_X_3d,
+                    y=train_y,
+                    validation_data=(test_X_3d, test_y),
+                    epochs=20,
+                    batch_size=batch_size,  # no of samples per gradient update
+                    verbose=2,
+                    shuffle=False)
+# model.reset_states()
+
+# ----[Saving Model]----
+# serialize and saving the model structure to JSON
+model_name = 'air_quality_model'
+model_json = model.to_json()
+with open(model_name + '.json', 'w') as json_file:
+    json_file.write(model_json)
+# serialize and save the model weights to HDF5
+model.save_weights(model_name + '.h5')
+print('Model saved !')
+
+# ----[VISUALIZE]-----
+# Plotting of loss over epoch
+plt.plot(history.history['loss'], label='train_loss')
+plt.plot(history.history['val_loss'], label='test_loss')
+plt.legend()
+plt.show()
 
 
 # ------------------[RMSE EVALUATION]----------------------
@@ -263,9 +263,11 @@ print('Model Loaded !')
 # ----[Prepare Prediction]----
 # inverse transform the prediction back to original values
 prediction = []
+y_hat = test_X_3d[0]
 for i in range(test_X_3d.shape[0]):
-    temp_in = np.reshape(test_X_3d[i], (1, 3, 1))
-    prediction.append(model.predict(temp_in, batch_size=batch_size)[0])
+    y_hat = np.reshape(y_hat, (1, 1, 1))
+    y_hat = model.predict(y_hat, batch_size=batch_size)[0]
+    prediction.append(y_hat)
 print(prediction)
 # prediction = model.predict(test_X_3d, batch_size=batch_size)
 # # prepare zeros matrix so concat with prediction for inverse scaler
