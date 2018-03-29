@@ -12,68 +12,68 @@ from pandas import DataFrame
 
 
 # ------------[EXPERIMENT OF LSTM ON SINE WAVE]-------------
-# sampling rate
-fs = 200
-# frequency of the wave (e.g. 2 for 2 repetition)
-f = 2
-x = np.arange(200)
-y = [sin(2 * np.pi * f * (i / fs)) for i in x]
-data = np.array([x, y])
-data = data.T
-# plt.plot(data[:100, 0], data[:100, 1])
-# plt.title('TRAINING DATA')
+# # sampling rate
+# fs = 200
+# # frequency of the wave (e.g. 2 for 2 repetition)
+# f = 2
+# x = np.arange(200)
+# y = [sin(2 * np.pi * f * (i / fs)) for i in x]
+# data = np.array([x, y])
+# data = data.T
+# # plt.plot(data[:100, 0], data[:100, 1])
+# # plt.title('TRAINING DATA')
+# # plt.show()
+#
+# # prepare TRAINING DATA
+# train_x = []
+# for i in range(2, 99, 1):
+#     temp = []
+#     for j in range(2, -1, -1):
+#         temp.append(data[i-j, 1])
+#     train_x.append(temp)
+# train_x = np.array(train_x[:-1])
+# train_y = data[3:100, 1]
+# train_y = np.array(train_y[:-1])
+# train_x_3d = np.reshape(train_x, (train_x.shape[0], train_x.shape[1], 1))
+#
+# # prepara TESTING DATA
+# test_x = []
+# for i in range(110, 198, 1):
+#     temp = []
+#     for j in range(2, -1, -1):
+#         temp.append(data[i-j, 1])
+#     test_x.append(temp)
+# test_x = np.array(test_x)
+# test_y = data[111:199, 1]
+# test_y = np.array(test_y)
+# test_x_3d = np.reshape(test_x, (test_x.shape[0], test_x.shape[1], 1))
+#
+# print(train_x_3d.shape)
+# print(test_x_3d.shape)
+#
+#
+# # training
+# nb_batch = 2
+# model = Sequential()
+# model.add(LSTM(50,
+#                batch_input_shape=(nb_batch, train_x_3d.shape[1], train_x_3d.shape[2]),
+#                stateful=False))
+# model.add(Dense(1))
+# model.compile(loss='mae', optimizer='adam')
+#
+# history = model.fit(x=train_x_3d,
+#                     y=train_y,
+#                     epochs=100,
+#                     batch_size=nb_batch,
+#                     verbose=2,
+#                     validation_data=(test_x_3d, test_y))
+# prediction = model.predict(test_x_3d, batch_size=nb_batch)
+# plt.plot(test_y, marker='o', label='Actual')
+# plt.plot(prediction, marker='x', label='Prediction')
+# plt.legend()
 # plt.show()
-
-# prepare TRAINING DATA
-train_x = []
-for i in range(2, 99, 1):
-    temp = []
-    for j in range(2, -1, -1):
-        temp.append(data[i-j, 1])
-    train_x.append(temp)
-train_x = np.array(train_x[:-1])
-train_y = data[3:100, 1]
-train_y = np.array(train_y[:-1])
-train_x_3d = np.reshape(train_x, (train_x.shape[0], train_x.shape[1], 1))
-
-# prepara TESTING DATA
-test_x = []
-for i in range(110, 198, 1):
-    temp = []
-    for j in range(2, -1, -1):
-        temp.append(data[i-j, 1])
-    test_x.append(temp)
-test_x = np.array(test_x)
-test_y = data[111:199, 1]
-test_y = np.array(test_y)
-test_x_3d = np.reshape(test_x, (test_x.shape[0], test_x.shape[1], 1))
-
-print(train_x_3d.shape)
-print(test_x_3d.shape)
-
-
-# training
-nb_batch = 2
-model = Sequential()
-model.add(LSTM(50,
-               batch_input_shape=(nb_batch, train_x_3d.shape[1], train_x_3d.shape[2]),
-               stateful=False))
-model.add(Dense(1))
-model.compile(loss='mae', optimizer='adam')
-
-history = model.fit(x=train_x_3d,
-                    y=train_y,
-                    epochs=100,
-                    batch_size=nb_batch,
-                    verbose=2,
-                    validation_data=(test_x_3d, test_y))
-prediction = model.predict(test_x_3d, batch_size=nb_batch)
-plt.plot(test_y, marker='o', label='Actual')
-plt.plot(prediction, marker='x', label='Prediction')
-plt.legend()
-plt.show()
-rmse = sqrt(mean_squared_error(test_y, prediction))
-print('RMSE = ', rmse)
+# rmse = sqrt(mean_squared_error(test_y, prediction))
+# print('RMSE = ', rmse)
 
 
 def difference(datalist, interval=1):
@@ -210,3 +210,10 @@ def inverse_difference(diff_list, datalist):
 #
 # df3 = np.reshape(df2, (2, 2, 2))
 # print(df3)
+
+x = np.arange(10).reshape(10, 1)
+y = np.arange(10).reshape(10, 1)
+z =
+print(x)
+
+

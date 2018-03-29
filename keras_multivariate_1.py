@@ -160,6 +160,10 @@ def prepare_data(n_in=1, n_out=1, train_split=0.6):
     # -----------[SCALING]-----------
     scaler = MinMaxScaler(feature_range=(0, 1))
     data_values = scaler.fit_transform(diff_list)
+    # DEBUGGING
+    temp = np.concatenate((diff_list, data_values), axis=1)
+    temp = DataFrame(temp)
+    temp.to_csv('DEBUGGING SCALER.csv')
     print('SCALED------------------\n', data_values[:5])
 
     # -----------[PREPARE FOR SUPERVISED TRAINING]-----------
@@ -186,7 +190,7 @@ def prepare_data(n_in=1, n_out=1, train_split=0.6):
     return data_train_X, data_train_y, data_test_X, data_test_y, scaler, data.values
 
 
-time_step = 2
+time_step = 3
 train_X, train_y, test_X, test_y, scaler, data_values_all = prepare_data(n_in=time_step,
                                                                          n_out=1,
                                                                          train_split=0.7)
@@ -197,51 +201,51 @@ print('TEST_X_3D = ', test_X_3d.shape)
 
 # ------------------[TRAINING AND VALIDATION]----------------------
 # Available batch size = [1, 26278, 2, 13139, 7, 3754, 14, 1877]
-nb_epoch = 150
 batch_size = 100
-# history = []
+# # nb_epoch = 150
+# # history = []
+# #
+# model = Sequential()
+# model.add(LSTM(100,
+#                input_shape=(train_X_3d.shape[1], train_X_3d.shape[2]),
+#                return_sequences=False,
+#                stateful=False,
+#                dropout=0))
+# # model.add(LSTM(32,
+# #                return_sequences=False,
+# #                stateful=False))
+# # model.add(LSTM(32,
+# #                stateful=False))
+# model.add(Dense(1))
+# model.compile(loss='mean_absolute_error',
+#               optimizer='adam')
+# print(model.summary())
+# # for i in range(nb_epoch):
+# history = model.fit(x=train_X_3d,
+#                     y=train_y,
+#                     validation_data=(test_X_3d, test_y),
+#                     epochs=20,
+#                     batch_size=batch_size,  # no of samples per gradient update
+#                     verbose=2,
+#                     shuffle=False)
+# # model.reset_states()
 #
-model = Sequential()
-model.add(LSTM(64,
-               input_shape=(train_X_3d.shape[1], train_X_3d.shape[2]),
-               return_sequences=False,
-               stateful=False,
-               dropout=0))
-# model.add(LSTM(32,
-#                return_sequences=True,
-#                stateful=False))
-# model.add(LSTM(32,
-#                stateful=False))
-model.add(Dense(1))
-model.compile(loss='mean_absolute_error',
-              optimizer='adam')
-print(model.summary())
-# for i in range(nb_epoch):
-history = model.fit(x=train_X_3d,
-                    y=train_y,
-                    validation_data=(test_X_3d, test_y),
-                    epochs=50,
-                    batch_size=batch_size,  # no of samples per gradient update
-                    verbose=2,
-                    shuffle=False)
-# model.reset_states()
-
-# ----[Saving Model]----
-# serialize and saving the model structure to JSON
-model_name = 'air_quality_model'
-model_json = model.to_json()
-with open(model_name + '.json', 'w') as json_file:
-    json_file.write(model_json)
-# serialize and save the model weights to HDF5
-model.save_weights(model_name + '.h5')
-print('Model saved !')
-
-# ----[VISUALIZE]-----
-# Plotting of loss over epoch
-plt.plot(history.history['loss'], label='train_loss')
-plt.plot(history.history['val_loss'], label='test_loss')
-plt.legend()
-plt.show()
+# # ----[Saving Model]----
+# # serialize and saving the model structure to JSON
+# model_name = 'air_quality_model'
+# model_json = model.to_json()
+# with open(model_name + '.json', 'w') as json_file:
+#     json_file.write(model_json)
+# # serialize and save the model weights to HDF5
+# model.save_weights(model_name + '.h5')
+# print('Model saved !')
+#
+# # ----[VISUALIZE]-----
+# # Plotting of loss over epoch
+# plt.plot(history.history['loss'], label='train_loss')
+# plt.plot(history.history['val_loss'], label='test_loss')
+# plt.legend()
+# plt.show()
 
 
 # ------------------[RMSE EVALUATION]----------------------
@@ -260,7 +264,12 @@ print('Model Loaded !')
 
 # ----[Prepare Prediction]----
 # inverse transform the prediction back to original values
-prediction = model.predict(test_X_3d, batch_size=batch_size)
+prediction = []
+for i in range(test_X_3d.shape[0]):
+    temp_in = np.reshape(test_X_3d[i], (1, 3, 1))
+    prediction.append(model.predict(temp_in, batch_size=batch_size)[0])
+print(prediction)
+# prediction = model.predict(test_X_3d, batch_size=batch_size)
 # # prepare zeros matrix so concat with prediction for inverse scaler
 # zero = np.zeros((prediction.shape[0], 2))
 # # jz to fill up the empty columns
@@ -290,7 +299,7 @@ print('RMSE = ', rmse)
 
 plt.plot(actual[:72], label='actual', marker='x')
 plt.plot(prediction[:72], label='prediction', marker='o')
-plt.title('2 DAYS PREDICTION (48 points)')
+plt.title('2 DAYS PREDICTION (T_step={}, RMSE={:.3f})'.format(time_step, rmse), )
 plt.legend()
 plt.show()
 
