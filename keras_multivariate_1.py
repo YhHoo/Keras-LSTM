@@ -161,9 +161,7 @@ def prepare_data(n_in=1, n_out=1, train_split=0.6):
     scaler = MinMaxScaler(feature_range=(0, 1))
     data_values = scaler.fit_transform(diff_list)
     # DEBUGGING
-    temp = np.concatenate((diff_list, data_values), axis=1)
-    temp = DataFrame(temp)
-    temp.to_csv('DEBUGGING SCALER.csv')
+    print(max(diff_list), min(diff_list))
     print('SCALED------------------\n', data_values[:5])
 
     # -----------[PREPARE FOR SUPERVISED TRAINING]-----------

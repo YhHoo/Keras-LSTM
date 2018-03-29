@@ -114,14 +114,17 @@ def test_label_encoder():
 
 def max_min_scale():
     scaler = MinMaxScaler(feature_range=(0, 1))
-    dummy = np.array([[1, 2, 3, 4, -5],
+    dummy = np.array([[-980, 2, 3, 4, -5],
                       [11, 22, 33, 44, -55],
                       [9, 9, 9, 9, -99],
-                      [5, 5, 5, 5, -500]])
+                      [769, 5, 5, 5, -500]])
     dummy2 = scaler.fit_transform(dummy)
     print(dummy2)
     dummy2 = scaler.inverse_transform(dummy2)
     print(dummy2)
+
+
+max_min_scale()
 
 
 def test_standard_scaler():
@@ -211,9 +214,5 @@ def inverse_difference(diff_list, datalist):
 # df3 = np.reshape(df2, (2, 2, 2))
 # print(df3)
 
-x = np.arange(10).reshape(10, 1)
-y = np.arange(10).reshape(10, 1)
-z =
-print(x)
 
 
