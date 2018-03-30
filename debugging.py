@@ -8,6 +8,7 @@ from keras.optimizers import SGD
 from functools import reduce
 from sklearn.preprocessing import StandardScaler, LabelEncoder, MinMaxScaler
 from keras.preprocessing.sequence import pad_sequences
+from pandas import read_csv
 from pandas import DataFrame
 
 
@@ -122,9 +123,9 @@ def max_min_scale():
     print(dummy2)
     dummy2 = scaler.inverse_transform(dummy2)
     print(dummy2)
-
-
-max_min_scale()
+    scaler2 = StandardScaler()
+    dummy3 = scaler2.fit_transform(dummy)
+    print(dummy3)
 
 
 def test_standard_scaler():

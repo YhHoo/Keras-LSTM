@@ -13,6 +13,7 @@ from sklearn.metrics import mean_squared_error
 from keras.models import Sequential
 from keras.layers import Dense, LSTM, GRU, RNN
 from keras.models import model_from_json
+from keras.callbacks import ModelCheckpoint
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -44,7 +45,7 @@ import matplotlib.pyplot as plt
 
 # ------------------[STEP 2: DATA LOADING]----------------------
 # load the processed data into df
-dataset = read_csv('air_quality_dataset_processed.csv', index_col=0)
+# dataset = read_csv('air_quality_dataset_processed.csv', index_col=0)
 
 # ------------------[DATA VISUALIZE]----------------------
 # # extract only the data in a matrix
@@ -135,13 +136,17 @@ def inv_difference(head, diff_list):
 def prepare_data(n_in=1, n_out=1, train_split=0.6):
     data = read_csv('air_quality_dataset_processed.csv', index_col=0)
     # This slice the sample size to divisible by 100
-    data = data[:40003]
+    # DEBUGGING - LOCATE ALL ZERO POLLUTION
+    pollution_zero_row = data.index[data['pollution'] == 0].tolist()
+    data.drop(pollution_zero_row, inplace=True)
+    data = data[:40004]
+    print(data.shape)
     # encode dir into integers, e.g. E->1, SE->2 ...
     encoder = LabelEncoder()
     data.iloc[:, 4] = encoder.fit_transform(data['wnd_dir'][:])
     # All FEATURE = [pollution | dew  | temp |  press | wnd_dir | wnd_spd | snow | rain]
     # drop off unwanted columns features
-    features_to_drop = ['dew', 'temp', 'press', 'wnd_dir', 'wnd_spd', 'snow', 'rain']
+    features_to_drop = ['wnd_dir', 'wnd_spd', 'snow', 'rain']
     data.drop(features_to_drop, inplace=True, axis=1)
     # get a matrix copy of all values in the df and convert them to float for scaling
     data_values = data.values.astype(dtype='float32')
@@ -160,8 +165,6 @@ def prepare_data(n_in=1, n_out=1, train_split=0.6):
     # -----------[SCALING]-----------
     scaler = MinMaxScaler(feature_range=(0, 1))
     data_values = scaler.fit_transform(diff_list)
-    # DEBUGGING
-    print(max(diff_list), min(diff_list))
     print('SCALED------------------\n', data_values[:5])
 
     # -----------[PREPARE FOR SUPERVISED TRAINING]-----------
@@ -188,7 +191,7 @@ def prepare_data(n_in=1, n_out=1, train_split=0.6):
     return data_train_X, data_train_y, data_test_X, data_test_y, scaler, data.values
 
 
-time_step = 1
+time_step = 3
 train_X, train_y, test_X, test_y, scaler, data_values_all = prepare_data(n_in=time_step,
                                                                          n_out=1,
                                                                          train_split=0.7)
@@ -200,50 +203,60 @@ print('TEST_X_3D = ', test_X_3d.shape)
 # ------------------[TRAINING AND VALIDATION]----------------------
 # Available batch size = [1, 26278, 2, 13139, 7, 3754, 14, 1877]
 batch_size = 100
-# nb_epoch = 150
-# history = []
-#
-model = Sequential()
-model.add(LSTM(100,
-               input_shape=(train_X_3d.shape[1], train_X_3d.shape[2]),
-               return_sequences=False,
-               stateful=False,
-               dropout=0))
-# model.add(LSTM(32,
+# nb_epoch = 10
+# # history = []
+# #
+# model = Sequential()
+# model.add(LSTM(150,
+#                batch_input_shape=(batch_size, train_X_3d.shape[1], train_X_3d.shape[2]),
 #                return_sequences=False,
-#                stateful=False))
-# model.add(LSTM(32,
-#                stateful=False))
-model.add(Dense(1))
-model.compile(loss='mean_absolute_error',
-              optimizer='adam')
-print(model.summary())
-# for i in range(nb_epoch):
-history = model.fit(x=train_X_3d,
-                    y=train_y,
-                    validation_data=(test_X_3d, test_y),
-                    epochs=20,
-                    batch_size=batch_size,  # no of samples per gradient update
-                    verbose=2,
-                    shuffle=False)
-# model.reset_states()
-
-# ----[Saving Model]----
-# serialize and saving the model structure to JSON
-model_name = 'air_quality_model'
-model_json = model.to_json()
-with open(model_name + '.json', 'w') as json_file:
-    json_file.write(model_json)
-# serialize and save the model weights to HDF5
-model.save_weights(model_name + '.h5')
-print('Model saved !')
-
-# ----[VISUALIZE]-----
-# Plotting of loss over epoch
-plt.plot(history.history['loss'], label='train_loss')
-plt.plot(history.history['val_loss'], label='test_loss')
-plt.legend()
-plt.show()
+#                stateful=True,
+#                dropout=0.2))
+# # model.add(LSTM(32,
+# #                return_sequences=False,
+# #                stateful=True,
+# #                dropout=0.2))
+# # model.add(LSTM(32,
+# #                stateful=False))
+# model.add(Dense(1))
+# model.compile(loss='mean_absolute_error',
+#               optimizer='adam')
+# print(model.summary())
+#
+# # checkpoint- this will save the model during training every time the accuracy hits a new highest
+# filepath = 'air_quality_model.h5'
+# checkpoint = ModelCheckpoint(filepath=filepath,
+#                              monitor='val_loss',
+#                              verbose=1,
+#                              save_best_only=True,
+#                              mode='min',  # for acc, it should b 'max'; for loss, 'min'
+#                              period=1)  # no of epoch btw checkpoints
+# callback_list = [checkpoint]
+#
+# history = model.fit(x=train_X_3d,
+#                     y=train_y,
+#                     validation_data=(test_X_3d, test_y),
+#                     epochs=20,
+#                     batch_size=batch_size,  # no of samples per gradient update
+#                     verbose=2,
+#                     shuffle=False,
+#                     callbacks=callback_list)
+#
+#
+# # ----[Saving Model]----
+# # serialize and saving the model structure to JSON
+# model_name = 'air_quality_model'
+# model_json = model.to_json()
+# with open(model_name + '.json', 'w') as json_file:
+#     json_file.write(model_json)
+#
+#
+# # ----[VISUALIZE]-----
+# # Plotting of loss over epoch
+# plt.plot(history.history['loss'], label='train_loss')
+# plt.plot(history.history['val_loss'], label='test_loss')
+# plt.legend()
+# plt.show()
 
 
 # ------------------[RMSE EVALUATION]----------------------
@@ -262,22 +275,15 @@ print('Model Loaded !')
 
 # ----[Prepare Prediction]----
 # inverse transform the prediction back to original values
-prediction = []
-y_hat = test_X_3d[0]
-for i in range(test_X_3d.shape[0]):
-    y_hat = np.reshape(y_hat, (1, 1, 1))
-    y_hat = model.predict(y_hat, batch_size=batch_size)[0]
-    prediction.append(y_hat)
-print(prediction)
-# prediction = model.predict(test_X_3d, batch_size=batch_size)
-# # prepare zeros matrix so concat with prediction for inverse scaler
-# zero = np.zeros((prediction.shape[0], 2))
-# # jz to fill up the empty columns
-# prediction = np.concatenate((prediction, zero), axis=1)
+prediction = model.predict(test_X_3d, batch_size=batch_size)
+# prepare zeros matrix so concat with prediction for inverse scaler
+zero = np.zeros((prediction.shape[0], 3))
+# jz to fill up the empty columns
+prediction = np.concatenate((prediction, zero), axis=1)
 # inverse MaxMinScale, make sure features are aligned as tat during fit_transform()
 prediction = scaler.inverse_transform(prediction)
-# # take only first column since the rest are just dummy
-# prediction = prediction[:, 0]  # stationary
+# take only first column since the rest are just dummy
+prediction = prediction[:, 0]  # stationary
 plt.plot(prediction)
 plt.title('PREDICTION IN DIFFERENCE VALUE')
 plt.show()
@@ -299,7 +305,7 @@ print('RMSE = ', rmse)
 
 plt.plot(actual[:72], label='actual', marker='x')
 plt.plot(prediction[:72], label='prediction', marker='o')
-plt.title('2 DAYS PREDICTION (T_step={}, RMSE={:.3f})'.format(time_step, rmse), )
+plt.title('3 DAYS PREDICTION (T_step={}, RMSE={:.3f})'.format(time_step, rmse), )
 plt.legend()
 plt.show()
 
