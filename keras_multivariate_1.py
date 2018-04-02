@@ -10,7 +10,7 @@ from pandas import concat
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler, StandardScaler
 from functools import reduce
 from sklearn.metrics import mean_squared_error
-from keras.models import Sequential
+from keras.models import Sequential, optimizers
 from keras.layers import Dense, LSTM, GRU, RNN
 from keras.models import model_from_json
 from keras.callbacks import ModelCheckpoint
