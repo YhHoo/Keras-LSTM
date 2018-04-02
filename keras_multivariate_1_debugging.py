@@ -61,13 +61,12 @@ def inv_difference(head, diff_list):
 
 data = read_csv('air_quality_dataset_processed.csv', index_col=0)
 # Dropping Pollution with NaN(0) rows
-pollution_zero_row = data.index[data['pollution'] == 0].tolist()
-data.drop(pollution_zero_row, inplace=True)
+# pollution_zero_row = data.index[data['pollution'] == 0].tolist()
+# data.drop(pollution_zero_row, inplace=True)
 
 data = data[:40003]  # THE ADJUSTER !! FOR DIVISIBLE BATCH_INPUT_SHAPE
 print(data.head())
 pollution_data = data.values[:, 0].astype(dtype='float32')
-print(pollution_data[:10])
 pollution_data = np.reshape(pollution_data, (-1, 1))
 print('RESHAPED to VERTICAL---------------\n', pollution_data)
 
@@ -101,54 +100,55 @@ test_X_3d = np.reshape(test_X, (test_X.shape[0], test_X.shape[1], data_dim))
 print('---------[READY]------------')
 print('TRAIN_X = {}\nTRAIN_y = {}'.format(train_X.shape, train_y.shape))
 print('TEST_X  = {}\nTEST_y  = {}'.format(test_X.shape, test_y.shape))
+print('TRAIN_X_3D = ', train_X_3d.shape)
+print('TEST_X_3D = ', test_X_3d.shape)
 
 
 # model architecture building -----------------------------------------------
 batch_size = 100
 epoch = 15
 
-# model = Sequential()
-# model.add(LSTM(100,
-#                input_shape=(train_X_3d.shape[1], train_X_3d.shape[2]),
-#                return_sequences=True))
-# model.add(LSTM)
-# model.add(Dense(1))
-# model.compile(loss='mae', optimizer='adam')
-# print(model.summary)
-# # model checkpoint to save model of Lowest VAL_LOSS
-# filepath = 'air_quality_model.h5'
-# checkpoint = ModelCheckpoint(filepath=filepath,
-#                              monitor='val_loss',
-#                              verbose=1,
-#                              save_best_only=True,
-#                              mode='min',  # for acc, it should b 'max'; for loss, 'min'
-#                              period=1)  # no of epoch btw checkpoints
-# callback_list = [checkpoint]
-# history = model.fit(x=train_X_3d,
-#                     y=train_y,
-#                     epochs=epoch,
-#                     batch_size=100,
-#                     validation_data=(test_X_3d, test_y),
-#                     verbose=2,
-#                     callbacks=callback_list,
-#                     shuffle=True)
-#
-#
-# # ----[Saving Model Structure ONLY, not weight]----
-# # serialize and saving the model structure to JSON
-# model_name = 'air_quality_model'
-# model_json = model.to_json()
-# with open(model_name + '.json', 'w') as json_file:
-#     json_file.write(model_json)
-# print('Model Structure Saved !')
+model = Sequential()
+model.add(LSTM(100,
+               input_shape=(train_X_3d.shape[1], train_X_3d.shape[2]),
+               return_sequences=False))
+model.add(Dense(1))
+model.compile(loss='mae', optimizer='adam')
+print(model.summary())
+# model checkpoint to save model of Lowest VAL_LOSS
+filepath = 'air_quality_model.h5'
+checkpoint = ModelCheckpoint(filepath=filepath,
+                             monitor='val_loss',
+                             verbose=1,
+                             save_best_only=True,
+                             mode='min',  # for acc, it should b 'max'; for loss, 'min'
+                             period=1)  # no of epoch btw checkpoints
+callback_list = [checkpoint]
+history = model.fit(x=train_X_3d,
+                    y=train_y,
+                    epochs=epoch,
+                    batch_size=100,
+                    validation_data=(test_X_3d, test_y),
+                    verbose=2,
+                    callbacks=callback_list,
+                    shuffle=True)
 
-#
-# # ----[VISUALIZE]-----
-# # Plotting of loss over epoch
-# plt.plot(history.history['loss'], label='train_loss')
-# plt.plot(history.history['val_loss'], label='test_loss')
-# plt.legend()
-# plt.show()
+
+# ----[Saving Model Structure ONLY, not weight]----
+# serialize and saving the model structure to JSON
+model_name = 'air_quality_model'
+model_json = model.to_json()
+with open(model_name + '.json', 'w') as json_file:
+    json_file.write(model_json)
+print('Model Structure Saved !')
+
+
+# ----[VISUALIZE]-----
+# Plotting of loss over epoch
+plt.plot(history.history['loss'], label='train_loss')
+plt.plot(history.history['val_loss'], label='test_loss')
+plt.legend()
+plt.show()
 
 # ----[PREDICTION AND VERIFICATION]-----------------------------------------------
 # ----[Loading Model]----

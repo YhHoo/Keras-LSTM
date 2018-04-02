@@ -11,6 +11,10 @@ from keras.preprocessing.sequence import pad_sequences
 from pandas import read_csv
 from pandas import DataFrame
 
+x = 3
+y = 4
+assert (x == y), 'Feature setting must be same'
+
 
 # ------------[EXPERIMENT OF LSTM ON SINE WAVE]-------------
 # # sampling rate
