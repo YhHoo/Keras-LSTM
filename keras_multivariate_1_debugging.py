@@ -60,8 +60,10 @@ def inv_difference(head, diff_list):
 
 
 data = read_csv('air_quality_dataset_processed.csv', index_col=0)
+# Dropping Pollution with NaN(0) rows
 pollution_zero_row = data.index[data['pollution'] == 0].tolist()
 data.drop(pollution_zero_row, inplace=True)
+
 data = data[:40003]  # THE ADJUSTER !! FOR DIVISIBLE BATCH_INPUT_SHAPE
 print(data.head())
 pollution_data = data.values[:, 0].astype(dtype='float32')
@@ -112,7 +114,7 @@ epoch = 15
 # model.add(LSTM)
 # model.add(Dense(1))
 # model.compile(loss='mae', optimizer='adam')
-#
+# print(model.summary)
 # # model checkpoint to save model of Lowest VAL_LOSS
 # filepath = 'air_quality_model.h5'
 # checkpoint = ModelCheckpoint(filepath=filepath,
@@ -169,11 +171,14 @@ prediction = scaler.inverse_transform(prediction)
 test_y = test_y.reshape((-1, 1))
 actual = scaler.inverse_transform(test_y)
 
+# calc RMSE
+rmse = sqrt(mean_squared_error(actual, prediction))
+
+# visualize
 plt.plot(prediction[:72], marker='x', label='PREDICTION')
 plt.plot(actual[:72], marker='o', label='ACTUAL')
 plt.legend()
-plt.title('LSTM PREDICTION vs ACTUAL for 3 Days')
+plt.title('LSTM PREDICTION vs ACTUAL for 3 Days\n RMSE={:.3f}'.format(rmse))
 plt.show()
 
-rmse = sqrt(mean_squared_error(actual, prediction))
 print('RMSE = ', rmse)
