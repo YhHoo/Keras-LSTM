@@ -139,14 +139,14 @@ def prepare_data(n_in=1, n_out=1, feature=1, train_split=0.6):
     # DEBUGGING - LOCATE ALL ZERO POLLUTION
     pollution_zero_row = data.index[data['pollution'] == 0].tolist()
     data.drop(pollution_zero_row, inplace=True)
-    data = data[:40008]
+    data = data[:40014]
     print(data.shape)
     # encode dir into integers, e.g. E->1, SE->2 ...
     encoder = LabelEncoder()
     data.iloc[:, 4] = encoder.fit_transform(data['wnd_dir'][:])
     # All FEATURE = [pollution | dew  | temp |  press | wnd_dir | wnd_spd | snow | rain]
     # drop off unwanted columns features HERE !!
-    features_to_drop = []
+    features_to_drop = ['dew', 'temp', 'press', 'wnd_dir', 'wnd_spd', 'snow', 'rain']
     feature_no = 8 - len(features_to_drop)
     data.drop(features_to_drop, inplace=True, axis=1)
 
@@ -218,9 +218,9 @@ def prepare_data(n_in=1, n_out=1, feature=1, train_split=0.6):
 
 
 # EXECUTE CODE-------
-time_step_in = 6
-time_step_out = 3
-feature = 8
+time_step_in = 10
+time_step_out = 5
+feature = 1
 batch_size = 100
 epoch = 50
 epoch_stateful = 10
@@ -238,58 +238,58 @@ print('TRAIN_X_3D = ', train_X_3d.shape)
 print('TEST_X_3D = ', test_X_3d.shape)
 
 # ------------------[TRAINING AND VALIDATION]----------------------
-# model = Sequential()
-# model.add(LSTM(8,
-#                input_shape=(train_X_3d.shape[1], train_X_3d.shape[2]),
-#                return_sequences=True,
-#                stateful=False,
-#                dropout=0))
-# model.add(LSTM(2,
-#                return_sequences=False,
+model = Sequential()
+model.add(LSTM(8,
+               input_shape=(train_X_3d.shape[1], train_X_3d.shape[2]),
+               return_sequences=True,
+               stateful=False,
+               dropout=0))
+model.add(LSTM(2,
+               return_sequences=False,
+               stateful=False))
+# model.add(LSTM(32,
 #                stateful=False))
-# # model.add(LSTM(32,
-# #                stateful=False))
-# # model.add(Dense(20))
-# model.add(Dense(3))
-# adam = optimizers.adam(lr=0.001)
-# model.compile(loss='mean_absolute_error',
-#               optimizer=adam)
-# print(model.summary())
+# model.add(Dense(20))
+model.add(Dense(time_step_out))  # make this auto !
+adam = optimizers.adam(lr=0.001)
+model.compile(loss='mean_absolute_error',
+              optimizer=adam)
+print(model.summary())
+
+# checkpoint- this will save the model during training every time the accuracy hits a new highest
+filepath = 'air_quality_model.h5'
+checkpoint = ModelCheckpoint(filepath=filepath,
+                             monitor='val_loss',
+                             verbose=1,
+                             save_best_only=True,
+                             mode='min',  # for acc, it should b 'max'; for loss, 'min'
+                             period=1)  # no of epoch btw checkpoints
+callback_list = [checkpoint]
+
+history = model.fit(x=train_X_3d,
+                    y=train_y,
+                    validation_data=(test_X_3d, test_y),
+                    epochs=epoch,
+                    batch_size=batch_size,  # no of samples per gradient update
+                    verbose=2,
+                    shuffle=False,
+                    callbacks=callback_list)
 #
-# # checkpoint- this will save the model during training every time the accuracy hits a new highest
-# filepath = 'air_quality_model.h5'
-# checkpoint = ModelCheckpoint(filepath=filepath,
-#                              monitor='val_loss',
-#                              verbose=1,
-#                              save_best_only=True,
-#                              mode='min',  # for acc, it should b 'max'; for loss, 'min'
-#                              period=1)  # no of epoch btw checkpoints
-# callback_list = [checkpoint]
 #
-# history = model.fit(x=train_X_3d,
-#                     y=train_y,
-#                     validation_data=(test_X_3d, test_y),
-#                     epochs=epoch,
-#                     batch_size=batch_size,  # no of samples per gradient update
-#                     verbose=2,
-#                     shuffle=False,
-#                     callbacks=callback_list)
-# #
-# #
-# # ----[Saving Model]----
-# # serialize and saving the model structure to JSON
-# model_name = 'air_quality_model'
-# model_json = model.to_json()
-# with open(model_name + '.json', 'w') as json_file:
-#     json_file.write(model_json)
-# #
-# #
-# # ----[VISUALIZE]-----
-# # Plotting of loss over epoch
-# plt.plot(history.history['loss'], label='train_loss')
-# plt.plot(history.history['val_loss'], label='test_loss')
-# plt.legend()
-# plt.show()
+# ----[Saving Model]----
+# serialize and saving the model structure to JSON
+model_name = 'air_quality_model'
+model_json = model.to_json()
+with open(model_name + '.json', 'w') as json_file:
+    json_file.write(model_json)
+#
+#
+# ----[VISUALIZE]-----
+# Plotting of loss over epoch
+plt.plot(history.history['loss'], label='train_loss')
+plt.plot(history.history['val_loss'], label='test_loss')
+plt.legend()
+plt.show()
 
 
 # ------------------[RMSE EVALUATION]----------------------
