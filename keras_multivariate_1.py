@@ -145,7 +145,7 @@ def prepare_data(n_in=1, n_out=1, feature=1, train_split=0.6):
     encoder = LabelEncoder()
     data.iloc[:, 4] = encoder.fit_transform(data['wnd_dir'][:])
     # All FEATURE = [pollution | dew  | temp |  press | wnd_dir | wnd_spd | snow | rain]
-    # drop off unwanted columns features
+    # drop off unwanted columns features HERE !!
     features_to_drop = []
     feature_no = 8 - len(features_to_drop)
     data.drop(features_to_drop, inplace=True, axis=1)
@@ -204,12 +204,13 @@ feature = 8
 batch_size = 100
 epoch = 20
 epoch_stateful = 10
+split = 0.7
 # -------------------
 
 # Data Preparation
 train_X, train_y, test_X, test_y, scaler, data_values_all = prepare_data(n_in=time_step,
                                                                          n_out=1,
-                                                                         train_split=0.7,
+                                                                         train_split=split,
                                                                          feature=feature)
 train_X_3d = np.reshape(train_X, (train_X.shape[0], time_step, int(train_X.shape[1] / time_step)))
 test_X_3d = np.reshape(test_X, (test_X.shape[0], time_step, int(test_X.shape[1] / time_step)))
@@ -221,7 +222,8 @@ model = Sequential()
 model.add(LSTM(100,
                input_shape=(train_X_3d.shape[1], train_X_3d.shape[2]),
                return_sequences=False,
-               stateful=False))
+               stateful=False,
+               dropout=0))
 # model.add(LSTM(60,
 #                return_sequences=False,
 #                stateful=False))
@@ -229,8 +231,9 @@ model.add(LSTM(100,
 #                stateful=False))
 model.add(Dense(20))
 model.add(Dense(1))
+adam = optimizers.adam(lr=0.001)
 model.compile(loss='mean_absolute_error',
-              optimizer='adam')
+              optimizer=adam)
 print(model.summary())
 
 # checkpoint- this will save the model during training every time the accuracy hits a new highest

@@ -1,3 +1,5 @@
+# THIS CODE IS EXACT COPY OF KERAS MULTIVARIATE EXCEPT THE DATA IS ONLY 1 FEATURE
+
 from math import sqrt
 from pandas import read_csv
 from pandas import datetime
@@ -109,9 +111,9 @@ batch_size = 100
 epoch = 15
 
 model = Sequential()
-model.add(LSTM(100,
-               input_shape=(train_X_3d.shape[1], train_X_3d.shape[2]),
-               return_sequences=False))
+model.add(RNN(100,
+              input_shape=(train_X_3d.shape[1], train_X_3d.shape[2]),
+              return_sequences=False))
 model.add(Dense(1))
 model.compile(loss='mae', optimizer='adam')
 print(model.summary())
