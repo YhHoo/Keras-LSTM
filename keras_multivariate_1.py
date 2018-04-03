@@ -139,7 +139,7 @@ def prepare_data(n_in=1, n_out=1, feature=1, train_split=0.6):
     # DEBUGGING - LOCATE ALL ZERO POLLUTION
     pollution_zero_row = data.index[data['pollution'] == 0].tolist()
     data.drop(pollution_zero_row, inplace=True)
-    data = data[:40003]
+    data = data[:40008]
     print(data.shape)
     # encode dir into integers, e.g. E->1, SE->2 ...
     encoder = LabelEncoder()
@@ -185,13 +185,32 @@ def prepare_data(n_in=1, n_out=1, feature=1, train_split=0.6):
 
     # -----------[SPLIT INTO TRAINING & TESTING SET]-----------
     train_size = round(samples_size * train_split)
+    test_size = samples_size - train_size
     # get an matrix copy of all values from the df
     data_supervised_values = data_supervised.values
     # slicing
-    data_train_X = data_supervised_values[:train_size, :-feature_no]
+    data_train_X = data_supervised_values[:train_size, :(-feature_no * n_out)]
     data_train_y = data_supervised_values[:train_size, -feature_no]
-    data_test_X = data_supervised_values[train_size:, :-feature_no]
+    data_test_X = data_supervised_values[train_size:, :(-feature_no * n_out)]
     data_test_y = data_supervised_values[train_size:, -feature_no]
+
+    if n_out > 1:
+        # e.g. if n_out = 3, feature = 8, y_index = [-8, -16, -24], index where the y lies
+        y_index = [(i * -feature_no) for i in range(1, n_out + 1, 1)]
+
+        # initialize first column
+        data_train_y = data_supervised_values[:train_size, y_index[0]].reshape((train_size, -1))
+        data_test_y = data_supervised_values[train_size:, y_index[0]].reshape((test_size, -1))
+
+        # concat for the rest column
+        for index in y_index[1:]:
+            # train_y
+            nex_column = data_supervised_values[:train_size, index].reshape((train_size, -1))
+            data_train_y = np.concatenate((data_train_y, nex_column), axis=1)
+            # test y
+            nex_column = data_supervised_values[train_size:, index].reshape((test_size, -1))
+            data_test_y = np.concatenate((data_test_y, nex_column), axis=1)
+
     print('---------[READY]------------')
     print('TRAIN_X = {}\nTRAIN_y = {}'.format(data_train_X.shape, data_train_y.shape))
     print('TEST_X  = {}\nTEST_y  = {}'.format(data_test_X.shape, data_test_y.shape))
@@ -199,77 +218,78 @@ def prepare_data(n_in=1, n_out=1, feature=1, train_split=0.6):
 
 
 # EXECUTE CODE-------
-time_step = 3
+time_step_in = 6
+time_step_out = 3
 feature = 8
 batch_size = 100
-epoch = 20
+epoch = 50
 epoch_stateful = 10
 split = 0.7
 # -------------------
 
 # Data Preparation
-train_X, train_y, test_X, test_y, scaler, data_values_all = prepare_data(n_in=time_step,
-                                                                         n_out=1,
+train_X, train_y, test_X, test_y, scaler, data_values_all = prepare_data(n_in=time_step_in,
+                                                                         n_out=time_step_out,
                                                                          train_split=split,
                                                                          feature=feature)
-train_X_3d = np.reshape(train_X, (train_X.shape[0], time_step, int(train_X.shape[1] / time_step)))
-test_X_3d = np.reshape(test_X, (test_X.shape[0], time_step, int(test_X.shape[1] / time_step)))
+train_X_3d = np.reshape(train_X, (train_X.shape[0], time_step_in, feature))
+test_X_3d = np.reshape(test_X, (test_X.shape[0], time_step_in, feature))
 print('TRAIN_X_3D = ', train_X_3d.shape)
 print('TEST_X_3D = ', test_X_3d.shape)
 
 # ------------------[TRAINING AND VALIDATION]----------------------
-model = Sequential()
-model.add(LSTM(100,
-               input_shape=(train_X_3d.shape[1], train_X_3d.shape[2]),
-               return_sequences=False,
-               stateful=False,
-               dropout=0))
-# model.add(LSTM(60,
+# model = Sequential()
+# model.add(LSTM(8,
+#                input_shape=(train_X_3d.shape[1], train_X_3d.shape[2]),
+#                return_sequences=True,
+#                stateful=False,
+#                dropout=0))
+# model.add(LSTM(2,
 #                return_sequences=False,
 #                stateful=False))
-# model.add(LSTM(32,
-#                stateful=False))
-model.add(Dense(20))
-model.add(Dense(1))
-adam = optimizers.adam(lr=0.001)
-model.compile(loss='mean_absolute_error',
-              optimizer=adam)
-print(model.summary())
-
-# checkpoint- this will save the model during training every time the accuracy hits a new highest
-filepath = 'air_quality_model.h5'
-checkpoint = ModelCheckpoint(filepath=filepath,
-                             monitor='val_loss',
-                             verbose=1,
-                             save_best_only=True,
-                             mode='min',  # for acc, it should b 'max'; for loss, 'min'
-                             period=1)  # no of epoch btw checkpoints
-callback_list = [checkpoint]
-
-history = model.fit(x=train_X_3d,
-                    y=train_y,
-                    validation_data=(test_X_3d, test_y),
-                    epochs=epoch,
-                    batch_size=batch_size,  # no of samples per gradient update
-                    verbose=2,
-                    shuffle=False,
-                    callbacks=callback_list)
+# # model.add(LSTM(32,
+# #                stateful=False))
+# # model.add(Dense(20))
+# model.add(Dense(3))
+# adam = optimizers.adam(lr=0.001)
+# model.compile(loss='mean_absolute_error',
+#               optimizer=adam)
+# print(model.summary())
 #
+# # checkpoint- this will save the model during training every time the accuracy hits a new highest
+# filepath = 'air_quality_model.h5'
+# checkpoint = ModelCheckpoint(filepath=filepath,
+#                              monitor='val_loss',
+#                              verbose=1,
+#                              save_best_only=True,
+#                              mode='min',  # for acc, it should b 'max'; for loss, 'min'
+#                              period=1)  # no of epoch btw checkpoints
+# callback_list = [checkpoint]
 #
-# ----[Saving Model]----
-# serialize and saving the model structure to JSON
-model_name = 'air_quality_model'
-model_json = model.to_json()
-with open(model_name + '.json', 'w') as json_file:
-    json_file.write(model_json)
-#
-#
-# ----[VISUALIZE]-----
-# Plotting of loss over epoch
-plt.plot(history.history['loss'], label='train_loss')
-plt.plot(history.history['val_loss'], label='test_loss')
-plt.legend()
-plt.show()
+# history = model.fit(x=train_X_3d,
+#                     y=train_y,
+#                     validation_data=(test_X_3d, test_y),
+#                     epochs=epoch,
+#                     batch_size=batch_size,  # no of samples per gradient update
+#                     verbose=2,
+#                     shuffle=False,
+#                     callbacks=callback_list)
+# #
+# #
+# # ----[Saving Model]----
+# # serialize and saving the model structure to JSON
+# model_name = 'air_quality_model'
+# model_json = model.to_json()
+# with open(model_name + '.json', 'w') as json_file:
+#     json_file.write(model_json)
+# #
+# #
+# # ----[VISUALIZE]-----
+# # Plotting of loss over epoch
+# plt.plot(history.history['loss'], label='train_loss')
+# plt.plot(history.history['val_loss'], label='test_loss')
+# plt.legend()
+# plt.show()
 
 
 # ------------------[RMSE EVALUATION]----------------------
@@ -289,26 +309,54 @@ print('Model Loaded !')
 # ----[Prediction]----
 # inverse transform the prediction back to original values
 prediction = model.predict(test_X_3d, batch_size=batch_size)
+# for refer usage
+y_col = prediction.shape[1]
+y_row = prediction.shape[0]
+temp, temp2 = [], []
+# quick checking
+err_msg = 'test_y and prediction_y size must equal !'
+assert y_row == test_y.shape[0], err_msg
 
-# ----[Create Dummy Matrix for Inverse Scale (for feature > 1)]----
+# ----[Inverse Transform for Prediciton & Actual]----
+# The following expects a combination of any 'time_step_out' and 'feature' of y
 if feature > 1:
+    # ----[Create Dummy Matrix for Inverse Scale (for feature > 1)]----
     # prepare zeros matrix so concat with prediction for inverse scaler
     zero = np.zeros((prediction.shape[0], feature - 1))
-    # jz to fill up the empty columns
-    prediction = np.concatenate((prediction, zero), axis=1)
 
-    # for actual
-    test_y = test_y.reshape((-1, 1))
-    test_y = np.concatenate((test_y, zero), axis=1)
+    # for all time step output in prediction
+    for i in range(y_col):
+        # jz to fill up the empty columns
+        prediction_inv = np.concatenate((prediction[:, i].reshape((-1, 1)), zero), axis=1)
+        actual_inv = np.concatenate((test_y[:, i].reshape((-1, 1)), zero), axis=1)
+        # inv scale
+        prediction_inv = scaler.inverse_transform(prediction_inv)
+        actual_inv = scaler.inverse_transform(actual_inv)
+        # take only first column, reshape to vertical vector
+        # prediction_inv = prediction_inv[:, 0].reshape((y_row, -1))
+        temp.append(prediction_inv[:, 0])
+        temp2.append(actual_inv[:, 0])
+    temp = np.array(temp).T
+    temp2 = np.array(temp2).T
+    # Return Inversed Transformed prediction and actual in same matrix
+    prediction = temp
+    actual = temp2
 else:
-    # no matter wat, test_y will hav to be converted to vertical vector
-    test_y = test_y.reshape((-1, 1))
-
-# ----[Inverse Scale]----
-# inverse MaxMinScale, make sure features are aligned as tat during fit_transform()
-prediction = scaler.inverse_transform(prediction)
-# take only first column since the rest are just dummy
-prediction = prediction[:, 0]
+    # For 1 feature
+    # for all time step output in prediction
+    for i in range(y_col):
+        # inv scale
+        prediction_inv = scaler.inverse_transform(prediction[:, i].reshape((-1, 1)))
+        actual_inv = scaler.inverse_transform(test_y[:, i].reshape((-1, 1)))
+        # take only first column, reshape to vertical vector
+        # prediction_inv = prediction_inv[:, 0].reshape((y_row, -1))
+        temp.append(prediction_inv[:, 0])
+        temp2.append(actual_inv[:, 0])
+    temp = np.array(temp).T
+    temp2 = np.array(temp2).T
+    # Return Inversed Transformed prediction and actual in same matrix
+    prediction = temp
+    actual = temp2
 
 # ----[Inverse Difference]----
 # # find the head index, refer evernote for more explanation on below:
@@ -318,19 +366,42 @@ prediction = prediction[:, 0]
 # print('INV_DIFFERENCE------------------\n', prediction[:5])
 # print(len(prediction))
 
-# ----[Prepare Actual]----
-actual = scaler.inverse_transform(test_y)
-actual = actual[:, 0]
-
 # ----[RMSE]----
-rmse = sqrt(mean_squared_error(actual, prediction))
+rmse = sqrt(mean_squared_error(actual.ravel(), prediction.ravel()))
 print('RMSE = ', rmse)
 
 
-plt.plot(actual[:72], label='actual', marker='x')
-plt.plot(prediction[:72], label='prediction', marker='o')
-plt.title('3 DAYS PREDICTION\n(T_step={}, f={}, RMSE={:.3f})'.format(time_step, feature, rmse))
-plt.legend()
-plt.show()
+def one_time_output_plot(actual, prediction):
+    plt.plot(actual[:72], label='actual', marker='x')
+    plt.plot(prediction[:72], label='prediction', marker='o')
+    plt.title('3 DAYS PREDICTION\n(T_step={}, f={}, RMSE={:.3f})'.format(time_step_in, feature, rmse))
+    plt.legend()
+    plt.show()
+
+
+# this accept a y of size [test_size, time_step_out], plot a forecast for every 3 input
+def multi_time_output_plot(actual, prediction):
+    time_step = prediction.shape[1]
+    # Plot actual first
+    base = actual[:72, 0]
+    plt.plot(base, marker='o')
+
+    # create starting point for n_step_ahead_prediction
+    index = [i for i in range(0, 72 - (72 % time_step), time_step)]
+
+    # plot n_step_ahead_prediction
+    for start in index:
+        # create a set of forward x-coordinate for every starting point
+        x = [j for j in range(start, start + time_step, 1)]
+        y = prediction[start, :]
+        plt.plot(x, y, color='red', marker='x')
+
+    plt.title('3 DAYS PREDICTION\n(T_step_in={}, T_step_out={}, f={}, RMSE={:.3f})'.
+              format(time_step_in, time_step_out, feature, rmse))
+    plt.legend()
+    plt.show()
+
+
+multi_time_output_plot(actual, prediction)
 
 

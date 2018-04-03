@@ -11,10 +11,23 @@ from keras.preprocessing.sequence import pad_sequences
 from pandas import read_csv
 from pandas import DataFrame
 
-x = 3
-y = 4
-assert (x == y), 'Feature setting must be same'
+# l = [0, 1, 2, 3, 4, 5, 6, 7, 8]
+# plt.plot(l)
+# x = [0, 1, 2]
+# y = [10, 10, 10]
+# x2 = [5, 6, 7]
+# y2 = [11, 11, 11]
+# plt.plot(x, y, color='red')
+# plt.plot(x2, y2, color='red')
+# plt.show()
+print(5 % 3)
 
+# z = np.concatenate((c, b), axis=1)
+# print(z)
+# print(z.shape)
+
+# z = np.concatenate((a[:, -3], a[:, -1]), axis=0)
+# print(z.reshape((2, 3)))
 
 # ------------[EXPERIMENT OF LSTM ON SINE WAVE]-------------
 # # sampling rate
